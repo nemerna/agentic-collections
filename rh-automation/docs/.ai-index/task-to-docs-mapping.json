@@ -1,0 +1,134 @@
+{
+  "version": "1.0",
+  "generated": "2026-02-22T00:00:00Z",
+  "workflows": {
+    "governance_deployment_production": {
+      "description": "Deploy to production with full governance: safety checks, check mode, limit, approval",
+      "trigger_patterns": [
+        "deploy to production",
+        "push to prod",
+        "release to production",
+        "update production servers",
+        "production deployment"
+      ],
+      "required_docs": [
+        "aap/deployment-governance.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [],
+      "workflow_order": [
+        "deployment-governance.md (Phase 1: risk classification, Phase 2: governance decision)",
+        "job-launching-best-practices.md (check mode, limit, extra_vars, post-execution)"
+      ],
+      "critical_sections": {
+        "aap/deployment-governance.md": ["Inventory Risk Classification", "Governance Workflow", "Approval Patterns"],
+        "aap/job-launching-best-practices.md": ["Check Mode", "Limit", "Extra Variables Security", "Post-Execution Analysis"]
+      },
+      "prerequisites": ["mcp-aap-validator skill"],
+      "estimated_tokens": 4000
+    },
+    "governance_deployment_staging": {
+      "description": "Deploy to staging with reduced governance: optional check mode, recommended limit",
+      "trigger_patterns": [
+        "deploy to staging",
+        "push to staging",
+        "update staging",
+        "staging deployment"
+      ],
+      "required_docs": [
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [
+        "aap/deployment-governance.md"
+      ],
+      "workflow_order": [
+        "job-launching-best-practices.md (extra_vars sanitization, optional check mode)"
+      ],
+      "estimated_tokens": 2200
+    },
+    "forensic_analysis_failed_job": {
+      "description": "Full forensic analysis of a failed AAP job with host fact correlation",
+      "trigger_patterns": [
+        "job failed",
+        "job #",
+        "why did the job fail",
+        "analyze the failure",
+        "what went wrong",
+        "troubleshoot job"
+      ],
+      "required_docs": [
+        "aap/troubleshooting-jobs.md",
+        "references/error-classification.md"
+      ],
+      "optional_docs": [],
+      "workflow_order": [
+        "troubleshooting-jobs.md (event analysis, failure patterns, host fact correlation)",
+        "error-classification.md (platform vs code classification, resolution templates)"
+      ],
+      "critical_sections": {
+        "aap/troubleshooting-jobs.md": ["Job Event Analysis", "Common Failure Patterns", "Host Fact Correlation", "Resolution Path Decision Tree"],
+        "references/error-classification.md": ["Primary Classification", "Detailed Error Patterns", "Correlation with Host Facts", "Resolution Templates"]
+      },
+      "prerequisites": ["mcp-aap-validator skill"],
+      "estimated_tokens": 4000
+    },
+    "error_classification_only": {
+      "description": "Classify an error as platform or code issue without full forensic analysis",
+      "trigger_patterns": [
+        "is this a platform issue",
+        "whose fault",
+        "platform or code",
+        "classify the error"
+      ],
+      "required_docs": [
+        "references/error-classification.md"
+      ],
+      "optional_docs": [
+        "aap/troubleshooting-jobs.md"
+      ],
+      "workflow_order": [
+        "error-classification.md (classification taxonomy, severity scoring)"
+      ],
+      "estimated_tokens": 1500
+    },
+    "check_mode_dry_run": {
+      "description": "Execute a job in check mode and analyze results",
+      "trigger_patterns": [
+        "dry run",
+        "check mode",
+        "test run",
+        "preview changes",
+        "what would change"
+      ],
+      "required_docs": [
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [],
+      "workflow_order": [
+        "job-launching-best-practices.md (Check Mode section, Interpreting Results)"
+      ],
+      "estimated_tokens": 2200
+    },
+    "post_deployment_investigation": {
+      "description": "Investigate issues after a deployment completed but service isn't working",
+      "trigger_patterns": [
+        "deployment succeeded but",
+        "service not working after",
+        "job completed but",
+        "unexpected results"
+      ],
+      "required_docs": [
+        "aap/troubleshooting-jobs.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [
+        "references/error-classification.md"
+      ],
+      "workflow_order": [
+        "troubleshooting-jobs.md (event analysis for completed jobs)",
+        "job-launching-best-practices.md (post-execution analysis)"
+      ],
+      "estimated_tokens": 4700
+    }
+  }
+}

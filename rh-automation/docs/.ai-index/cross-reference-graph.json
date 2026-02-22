@@ -1,0 +1,75 @@
+{
+  "version": "1.0",
+  "generated": "2026-02-22T00:00:00Z",
+  "relationships": [
+    {
+      "source": "aap/job-launching-best-practices.md",
+      "target": "aap/deployment-governance.md",
+      "type": "complements",
+      "description": "Job launching parameters implement the governance decisions defined in deployment-governance",
+      "confidence": 0.95,
+      "bidirectional": true
+    },
+    {
+      "source": "aap/deployment-governance.md",
+      "target": "aap/job-launching-best-practices.md",
+      "type": "prerequisites",
+      "description": "Governance patterns require understanding of check mode, limit, and extra_vars from launching best practices",
+      "confidence": 0.90,
+      "bidirectional": false
+    },
+    {
+      "source": "aap/troubleshooting-jobs.md",
+      "target": "references/error-classification.md",
+      "type": "complements",
+      "description": "Troubleshooting patterns use the error classification taxonomy to categorize root causes",
+      "confidence": 0.95,
+      "bidirectional": true
+    },
+    {
+      "source": "references/error-classification.md",
+      "target": "aap/troubleshooting-jobs.md",
+      "type": "prerequisites",
+      "description": "Error classification requires the detailed failure patterns documented in troubleshooting guide",
+      "confidence": 0.85,
+      "bidirectional": false
+    },
+    {
+      "source": "aap/job-launching-best-practices.md",
+      "target": "aap/troubleshooting-jobs.md",
+      "type": "leads_to",
+      "description": "When governed launches fail, troubleshooting guide provides the forensic analysis patterns",
+      "confidence": 0.80,
+      "bidirectional": false
+    },
+    {
+      "source": "aap/deployment-governance.md",
+      "target": "references/error-classification.md",
+      "type": "leads_to",
+      "description": "Post-deployment failures are classified using the error taxonomy",
+      "confidence": 0.70,
+      "bidirectional": false
+    }
+  ],
+  "clusters": {
+    "governance": {
+      "documents": [
+        "aap/deployment-governance.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "description": "Documents related to deployment governance and safe job launching"
+    },
+    "troubleshooting": {
+      "documents": [
+        "aap/troubleshooting-jobs.md",
+        "references/error-classification.md"
+      ],
+      "description": "Documents related to forensic troubleshooting and error classification"
+    }
+  },
+  "navigation_hints": {
+    "start_governance": "Start with aap/deployment-governance.md for risk classification, then load aap/job-launching-best-practices.md for execution parameters",
+    "start_troubleshooting": "Start with aap/troubleshooting-jobs.md for event analysis, then load references/error-classification.md for root cause classification",
+    "governance_to_troubleshooting": "If governance deployment fails, transition from governance cluster to troubleshooting cluster"
+  }
+}

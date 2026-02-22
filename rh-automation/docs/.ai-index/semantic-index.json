@@ -1,0 +1,228 @@
+{
+  "version": "1.0",
+  "generated": "2026-02-22T00:00:00Z",
+  "documents": [
+    {
+      "path": "aap/job-launching-best-practices.md",
+      "title": "AAP Job Launching Best Practices",
+      "category": "aap",
+      "tags": ["aap", "job-templates", "launching", "check-mode", "limit", "extra-vars", "governance"],
+      "semantic_keywords": [
+        "job template launch",
+        "check mode dry run",
+        "limit host subset",
+        "extra variables security",
+        "production deployment safety",
+        "credential management",
+        "survey variables",
+        "plain-text secret detection",
+        "phased rollout",
+        "changed-only summary",
+        "post-execution analysis",
+        "noise reduction"
+      ],
+      "use_cases": [
+        "governance_deployment",
+        "check_mode_execution",
+        "limit_enforcement",
+        "variable_sanitization",
+        "post_execution_analysis"
+      ],
+      "applies_to": ["aap2.5", "aap2.6"],
+      "content_summary": "Comprehensive guide for safe AAP job launching including check mode patterns, limit strategies, extra_vars secret scanning, and post-execution changed-only summaries.",
+      "related_docs": [
+        "aap/deployment-governance.md",
+        "references/error-classification.md"
+      ],
+      "token_estimate": 2200
+    },
+    {
+      "path": "aap/deployment-governance.md",
+      "title": "AAP Deployment Governance Patterns",
+      "category": "aap",
+      "tags": ["governance", "deployment", "safety", "inventory", "production", "risk-assessment"],
+      "semantic_keywords": [
+        "deployment governance",
+        "production safety",
+        "inventory risk classification",
+        "change control",
+        "deployment approval",
+        "phased rollout",
+        "blast radius control",
+        "canary deployment",
+        "high-risk inventory",
+        "governance workflow",
+        "approval patterns"
+      ],
+      "use_cases": [
+        "governance_deployment",
+        "inventory_risk_classification",
+        "phased_rollout",
+        "production_safety"
+      ],
+      "applies_to": ["aap2.5", "aap2.6"],
+      "content_summary": "Inventory risk classification patterns (CRITICAL/HIGH/MEDIUM/LOW), governance workflow phases, phased rollout strategies (canary, geographic, environment ladder), and approval patterns.",
+      "related_docs": [
+        "aap/job-launching-best-practices.md",
+        "references/error-classification.md"
+      ],
+      "token_estimate": 1800
+    },
+    {
+      "path": "aap/troubleshooting-jobs.md",
+      "title": "AAP Job Troubleshooting Guide",
+      "category": "aap",
+      "tags": ["troubleshooting", "job-failures", "errors", "aap", "debugging", "forensics"],
+      "semantic_keywords": [
+        "job failure analysis",
+        "AAP troubleshooting",
+        "privilege escalation timeout",
+        "module not found",
+        "host unreachable",
+        "connection timeout",
+        "task failure",
+        "job event parsing",
+        "root cause analysis",
+        "service failed to start",
+        "package dependency conflict",
+        "failure sequence reconstruction"
+      ],
+      "use_cases": [
+        "forensic_troubleshooting",
+        "job_failure_analysis",
+        "error_classification",
+        "resolution_recommendation"
+      ],
+      "applies_to": ["aap2.4", "aap2.5", "aap2.6"],
+      "content_summary": "Systematic troubleshooting for 6 common AAP failure patterns: privilege escalation, module not found, host unreachable, service failure, package conflicts, and timeouts. Includes event analysis, host fact correlation, and resolution decision tree.",
+      "related_docs": [
+        "references/error-classification.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "token_estimate": 2500
+    },
+    {
+      "path": "references/error-classification.md",
+      "title": "AAP Error Classification Taxonomy",
+      "category": "references",
+      "tags": ["error-classification", "troubleshooting", "platform-vs-code", "taxonomy"],
+      "semantic_keywords": [
+        "error classification",
+        "platform error vs code error",
+        "root cause categorization",
+        "failure taxonomy",
+        "unreachable vs failed",
+        "ansible error types",
+        "troubleshooting decision tree",
+        "severity scoring",
+        "priority matrix",
+        "host health assessment"
+      ],
+      "use_cases": [
+        "forensic_troubleshooting",
+        "error_classification",
+        "resolution_recommendation",
+        "severity_assessment"
+      ],
+      "applies_to": ["aap2.4", "aap2.5", "aap2.6"],
+      "content_summary": "Platform vs Code error classification taxonomy, severity scoring matrix, fact-based root cause detection, host health assessment template, and resolution templates for both platform and code issues.",
+      "related_docs": [
+        "aap/troubleshooting-jobs.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "token_estimate": 1500
+    }
+  ],
+  "task_mappings": {
+    "governance_deployment": {
+      "required_docs": [
+        "aap/deployment-governance.md",
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [],
+      "workflow_order": ["governance", "launching"],
+      "estimated_tokens": 4000,
+      "description": "Governed deployment to production or sensitive environments with safety checks, check mode, and approval"
+    },
+    "forensic_troubleshooting": {
+      "required_docs": [
+        "aap/troubleshooting-jobs.md",
+        "references/error-classification.md"
+      ],
+      "optional_docs": [
+        "aap/job-launching-best-practices.md"
+      ],
+      "workflow_order": ["troubleshooting", "classification"],
+      "estimated_tokens": 4000,
+      "description": "Forensic analysis of failed AAP jobs with host fact correlation and root cause classification"
+    },
+    "check_mode_execution": {
+      "required_docs": [
+        "aap/job-launching-best-practices.md"
+      ],
+      "optional_docs": [
+        "aap/deployment-governance.md"
+      ],
+      "workflow_order": ["launching"],
+      "estimated_tokens": 2200,
+      "description": "Execute job in check mode and analyze dry-run results"
+    },
+    "post_failure_analysis": {
+      "required_docs": [
+        "aap/troubleshooting-jobs.md",
+        "references/error-classification.md"
+      ],
+      "optional_docs": [],
+      "workflow_order": ["troubleshooting", "classification"],
+      "estimated_tokens": 4000,
+      "description": "Analyze job failure after governance deployment fails"
+    }
+  },
+  "inference_hints": {
+    "deployment_risk_detection": {
+      "critical": {
+        "keywords": ["prod", "production", "pci", "hipaa", "financial", "secure", "compliance"],
+        "confidence": 0.95,
+        "requires_check_mode": true,
+        "requires_limit": true
+      },
+      "high": {
+        "keywords": ["staging", "pre-prod", "preprod", "uat", "qa-prod"],
+        "confidence": 0.85,
+        "requires_check_mode": false,
+        "requires_limit": false
+      },
+      "medium": {
+        "keywords": ["qa", "test", "integration", "perf"],
+        "confidence": 0.75,
+        "requires_check_mode": false,
+        "requires_limit": false
+      },
+      "low": {
+        "keywords": ["dev", "development", "sandbox", "lab", "demo"],
+        "confidence": 0.90,
+        "requires_check_mode": false,
+        "requires_limit": false
+      }
+    },
+    "error_type_detection": {
+      "platform": {
+        "keywords": ["unreachable", "sudo", "privilege", "no space", "cannot allocate", "timeout", "SELinux", "connection refused", "permission denied"],
+        "confidence": 0.90
+      },
+      "code": {
+        "keywords": ["module not found", "undefined variable", "syntax error", "unsupported parameters", "AnsibleFilterError", "changed_when"],
+        "confidence": 0.90
+      },
+      "mixed": {
+        "keywords": ["service failed", "package conflict", "dependency"],
+        "confidence": 0.60
+      }
+    }
+  },
+  "usage_instructions": {
+    "for_agents": "Read this semantic index first (~200 tokens) to intelligently discover relevant documentation. Use task_mappings for governance deployment or forensic troubleshooting workflows. Follow workflow_order for optimal context loading.",
+    "query_based_discovery": "Match user query terms against semantic_keywords across all documents. Use inference_hints to detect deployment risk level or error type automatically.",
+    "token_optimization": "Load only required_docs first. Add optional_docs only if needed. Check estimated_tokens to manage context budget."
+  }
+}
