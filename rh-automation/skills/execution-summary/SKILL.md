@@ -1,96 +1,113 @@
 ---
 name: execution-summary
 description: |
-  Generate concise execution reports for audit and learning purposes.
+  Generate concise execution audit reports tracking documents consulted, MCP tools used, decisions made, and outcomes.
 
-  Use this skill when:
+  Use when:
   - "Generate execution summary"
   - "Create execution report"
-  - "Summarize what was used"
   - "Show workflow audit trail"
-  - After completing a governance deployment or troubleshooting session
-model: haiku
+  - After completing any governance workflow (assessment, deployment, troubleshooting)
+
+  NOT for: starting a new workflow (use the appropriate agent/skill instead).
+model: inherit
 color: green
 ---
 
-# Execution Summary Skill
+# Execution Summary
 
-Generates concise execution reports summarizing the agents, skills, tools, and documents used during a workflow session. Provides audit trails for governance compliance and operational learning.
+## Prerequisites
+
+**Required MCP Servers**: None (this skill summarizes the actions already taken)
 
 ## When to Use This Skill
 
 Use this skill when:
-- After completing a governance deployment workflow
-- After completing a forensic troubleshooting session
-- When generating audit reports for compliance
-- When documenting workflow execution for team learning
+- After completing a governance assessment workflow
+- After completing a governed deployment
+- After completing forensic troubleshooting
+- User asks for an execution summary or audit trail
+- As the final step in any agent workflow
 
 Do NOT use when:
-- Performing active deployment or troubleshooting (use appropriate agent instead)
+- Starting a new workflow (use the appropriate agent or skill)
+- During a workflow (generate summary only at the end)
 
 ## Workflow
 
-### Step 1: Analyze Conversation History
+### Step 1: Collect Execution Data
 
-Review the current conversation to extract:
-- Agents invoked and their outcomes
-- Skills invoked and their outcomes
-- MCP tools called and their results
-- Documents consulted
-- User decisions at confirmation points
-- Errors encountered and how they were resolved
+Review the current conversation/session to extract:
 
-### Step 2: Generate Report
+1. **Documents Consulted**: Which `.md` files were read using the Read tool, and what topic they informed
+2. **MCP Tools Invoked**: Which MCP tools were called, with which parameters, and what they returned (summary, not raw data)
+3. **Decisions Made**: What governance decisions were made based on document knowledge (risk classification, PASS/GAP/WARN, classification type)
+4. **Human Interactions**: What approvals were requested and what the user decided
+5. **Outcomes**: Final results of the workflow
 
-**Output Format**:
+### Step 2: Generate Structured Report
 
-```markdown
-# Execution Summary Report
-**Generated**: <timestamp>
-**Workflow**: <Governance Deployment | Forensic Troubleshooting | Mixed>
+**Output format**:
 
-## Agents Used
-| Agent | Purpose | Outcome |
-|-------|---------|---------|
-| <agent_name> | <what it did> | <SUCCESS/PARTIAL/FAILED> |
+```
+## Execution Summary
 
-## Skills Invoked
-| Skill | Step | Purpose | Outcome |
-|-------|------|---------|---------|
-| mcp-aap-validator | Prerequisite | AAP MCP validation | PASSED |
-| <skill_name> | <step_N> | <purpose> | <outcome> |
+**Workflow**: [Assessment / Deployment / Troubleshooting]
+**Initiated**: [timestamp]
+**Duration**: [time span]
+**Status**: [Completed / Partially Completed / Aborted]
 
-## MCP Tools Called
-| Tool | Server | Parameters | Result |
-|------|--------|-----------|--------|
-| <tool_name> | <server> | <key params> | <summary> |
+---
 
-## Documents Consulted
-| Document | Purpose |
-|----------|---------|
-| <doc_path> | <why it was read> |
+### Documents Consulted
 
-## Human Decisions
-| Decision Point | User Choice | Impact |
-|----------------|-------------|--------|
-| <what was asked> | <user's answer> | <what happened> |
+| Document | Topic | Citation |
+|---|---|---|
+| [governance-readiness.md](docs/aap/governance-readiness.md) | 7-domain assessment framework | Red Hat AAP 2.5 Security Best Practices (Ch. 15), Workflows (Ch. 9), Notifications (Ch. 25) |
+| [deployment-governance.md](docs/aap/deployment-governance.md) | Risk classification, check mode | Red Hat AAP 2.5 Job Templates (Ch. 9), Controller Best Practices |
+| [job-troubleshooting.md](docs/aap/job-troubleshooting.md) | Event parsing, failure patterns | Red Hat AAP 2.6 Troubleshooting Guide |
+| [error-classification.md](docs/references/error-classification.md) | Error taxonomy | Red Hat AAP 2.6 Troubleshooting Guide |
 
-## Key Findings
-1. <finding_1>
-2. <finding_2>
+### MCP Tools Used
 
-## Outcome
-<Final result summary>
+| Server | Tool | Purpose | Result |
+|---|---|---|---|
+| [server] | [tool_name] | [what it was used for] | [summary of result] |
 
-## Recommendations
-1. <recommendation_1>
-2. <recommendation_2>
+### Governance Decisions
+
+| Decision | Basis | Outcome |
+|---|---|---|
+| [e.g., "Classified Production as CRITICAL risk"] | [e.g., "Per deployment-governance.md: inventory name contains 'prod'"] | [e.g., "Check mode required before execution"] |
+
+### Human Interactions
+
+| Prompt | User Decision | Timestamp |
+|---|---|---|
+| [e.g., "Proceed with full execution?"] | [e.g., "Approved"] | [time] |
+
+### Outcome
+
+[Final result of the workflow]
+
+---
+
+**Audit Note**: All governance decisions in this workflow are traceable to official Red Hat documentation as cited in the Documents Consulted section.
 ```
 
 ## Dependencies
 
+### Required MCP Servers
+- None
+
 ### Related Skills
-- All other rh-automation skills (this skill reports on their execution)
+- All other skills (this skill summarizes their execution)
 
 ### Reference Documentation
-- No specific docs required (uses conversation history analysis)
+- All docs consulted during the workflow being summarized
+
+## Example Usage
+
+**User**: "Generate an execution summary for the deployment we just did"
+
+**Agent** produces a structured summary showing: deployment-governance.md was consulted (citing Red Hat Ch. 9 and Ch. 15), `job_templates_launch_create` was called twice (check mode + full run), risk was classified as CRITICAL (based on inventory name "Production"), user approved after check mode passed, and the deployment succeeded on 1 host with 3 changes.

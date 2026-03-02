@@ -1,250 +1,455 @@
 ---
-title: AAP Deployment Governance Patterns
+title: Deployment Governance
 category: aap
 sources:
-  - title: "Ansible Automation Controller Best Practices"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/using_automation_execution/assembly-controller-best-practices
-    sections: "Best practices for inventories, credentials, job templates"
-    date_accessed: 2026-02-22
-  - title: "Red Hat AAP Controller User Guide - Inventories"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/using_automation_execution/controller-inventories
-    sections: "Inventory management, groups, host patterns"
-    date_accessed: 2026-02-22
-tags: [governance, deployment, safety, inventory, production, risk-assessment]
+  - title: "Red Hat AAP 2.5 - Job Templates"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-job-templates
+    sections: "Ch. 9: Job template configuration, job_type (run/check), diff_mode, limit, extra_vars, job slicing"
+    date_accessed: 2026-02-20
+  - title: "Red Hat AAP 2.5 - Security Best Practices"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices
+    sections: "Ch. 15: Sec. 15.1.4 Remove user access to credentials, Sec. 15.1.5 Enforce separation of duties"
+    date_accessed: 2026-02-20
+  - title: "Red Hat AAP 2.5 - Workflows"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-workflows
+    sections: "Ch. 9: Workflow RBAC, approval nodes, failure handling"
+    date_accessed: 2026-02-20
+  - title: "Red Hat Ansible Best Practices - Check Mode"
+    url: https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html
+    sections: "Check mode, diff mode, limitations with shell/command modules"
+    date_accessed: 2026-02-20
+  - title: "Red Hat AAP Controller Best Practices"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-best-practices
+    sections: "Inventory management, environment separation"
+    date_accessed: 2026-02-20
+tags: [deployment, governance, check-mode, risk-classification, rollback, phased-rollout, extra-vars, secret-scanning]
 applies_to: [aap2.5, aap2.6]
 semantic_keywords:
-  - deployment governance
-  - production safety
-  - inventory risk classification
-  - change control
-  - deployment approval
-  - phased rollout
-  - blast radius control
-  - canary deployment
+  - "deploy to production"
+  - "check mode dry run"
+  - "inventory risk classification"
+  - "secret scanning extra_vars"
+  - "rollback failed job"
+  - "phased rollout"
+  - "job template launch"
+  - "diff mode"
+  - "deployment safety"
+  - "production governance"
 use_cases:
-  - governance_deployment
-  - inventory_risk_classification
-  - phased_rollout
-  - production_safety
+  - "governed_deployment"
+  - "risk_analysis"
+  - "check_mode_execution"
+  - "rollback"
 related_docs:
-  - aap/job-launching-best-practices.md
-  - references/error-classification.md
-last_updated: 2026-02-22
+  - "aap/governance-readiness.md"
+  - "aap/job-troubleshooting.md"
+  - "references/error-classification.md"
+last_updated: 2026-02-26
 ---
 
-# AAP Deployment Governance Patterns
+# Deployment Governance
+
+This document teaches the agent how to execute governed deployments on Ansible Automation Platform. It covers inventory risk classification, pre-launch safety checks, check mode execution and interpretation, rollback patterns, and phased rollout strategies. Every governance control is rooted in Red Hat's official documentation.
 
 ## Overview
 
-Deployment governance ensures that automation jobs are executed safely, with appropriate controls for target scope, execution mode, and approval. This document defines the governance patterns that differentiate an intelligent automation agent from a blind execution engine.
+A governed deployment follows a principle: **the higher the risk, the more governance controls apply**. Risk is determined by the target inventory, the scope of change, and the content of extra_vars. Governance controls range from simple confirmation (low risk) to mandatory check mode, approval gates, and phased rollout (critical risk).
 
-## When to Use This
+**Value over a vanilla agent**: A vanilla agent with MCP access will find the job template and launch it. It won't question whether the target is production, whether extra_vars contain secrets in plain text, or whether a dry run should precede the real execution. This document gives the agent the judgment to apply proportional governance.
 
-- When processing any deployment request targeting production or sensitive environments
-- When establishing governance workflows for AAP job launches
-- When classifying inventory risk levels
-- When determining phased rollout strategies
+## When to Use This Document
+
+**Use when**:
+- User asks to deploy, launch, or execute a job template
+- User asks to push to production
+- User asks about check mode or dry runs
+- User asks about rollback after a failed deployment
+
+**Do NOT use when**:
+- User asks to assess platform governance readiness (use [governance-readiness.md](governance-readiness.md))
+- User asks to troubleshoot a failed job (use [job-troubleshooting.md](job-troubleshooting.md))
+
+---
 
 ## Inventory Risk Classification
 
-### Risk Level Determination
+### Red Hat Source
 
-Classify inventory risk based on naming conventions and metadata:
+> "It is best practice to use separate inventories for production and development environments."
+>
+> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Controller Best Practices*
 
-| Risk Level | Inventory Name Patterns | Governance Requirements |
-|-----------|------------------------|------------------------|
-| **CRITICAL** | `prod`, `production`, `pci`, `hipaa`, `financial`, `secure` | Check mode mandatory, limit required, approval chain |
-| **HIGH** | `staging`, `pre-prod`, `uat`, `qa-prod` | Check mode recommended, limit suggested |
-| **MEDIUM** | `qa`, `test`, `integration`, `perf` | Check mode optional |
-| **LOW** | `dev`, `development`, `sandbox`, `lab`, `demo` | No governance required |
+### Classification Approach
 
-### Detection Logic
+Based on Red Hat's recommendation to separate production and development environments, this agent detects the environment from inventory metadata and applies proportional governance. This is the agent's contribution: translating Red Hat's principle into automated risk detection.
 
-```python
-HIGH_RISK_PATTERNS = [
-    "prod", "production", "pci", "hipaa", "financial",
-    "secure", "compliance", "regulated", "critical"
-]
+**Risk signals** (checked in order):
 
-MEDIUM_RISK_PATTERNS = [
-    "staging", "pre-prod", "preprod", "uat", "qa-prod"
-]
+1. **Inventory name** (primary signal): Word-boundary matching against environment keywords
+2. **Host count** (secondary signal): Large inventories carry higher blast radius
+3. **Recent job history** (tertiary signal): Inventories with recent failures may need extra caution
 
-def classify_inventory_risk(inventory_name):
-    name_lower = inventory_name.lower()
-    for pattern in HIGH_RISK_PATTERNS:
-        if pattern in name_lower:
-            return "CRITICAL"
-    for pattern in MEDIUM_RISK_PATTERNS:
-        if pattern in name_lower:
-            return "HIGH"
-    if any(p in name_lower for p in ["qa", "test", "integration"]):
-        return "MEDIUM"
-    return "LOW"
+### MCP Pattern: Inventory Lookup
+
+```json
+MCP Server: aap-mcp-inventory-management
+Tool: inventories_list
+Parameters: { "page_size": 100 }
 ```
 
-### Risk-Based Governance Response
+To check host count for a specific inventory:
 
-**CRITICAL Risk**:
-```
-⚠️ HIGH-RISK DEPLOYMENT DETECTED
-
-Target inventory: "Production-US-East" (Risk: CRITICAL)
-
-Required governance steps:
-1. ✅ Check Mode execution first (mandatory)
-2. ✅ Limit to subset of hosts (mandatory)
-3. ✅ Extra variables sanitization (mandatory)
-4. ✅ Explicit user approval (mandatory)
-
-Recommended:
-- Start with limit: "us-east[0:1]" (first 2 hosts)
-- Schedule maintenance window
-- Notify change management
-
-Shall I proceed with Check Mode on a limited subset first?
+```json
+MCP Server: aap-mcp-inventory-management
+Tool: hosts_list
+Parameters: { "page_size": 1, "search": "<inventory_name>" }
 ```
 
-**HIGH Risk**:
-```
-⚠️ Sensitive environment detected
+### Risk Decision Table
 
-Target inventory: "Staging-Global" (Risk: HIGH)
+| Inventory Name Pattern | Host Count | Risk Level | Governance Required |
+|---|---|---|---|
+| Contains `prod`, `production`, `live` | Any | **CRITICAL** | Check mode + approval + phased rollout recommended |
+| Contains `stage`, `staging`, `uat`, `preprod` | Any | **HIGH** | Check mode + approval |
+| Contains `test`, `qa` | Any | **MEDIUM** | Confirmation only |
+| Contains `dev`, `development`, `sandbox`, `lab` | Any | **LOW** | Direct execution permitted |
+| No matching pattern | > 50 hosts | **HIGH** | Check mode + approval (large blast radius) |
+| No matching pattern | <= 50 hosts | **MEDIUM** | Confirmation only |
 
-Recommended governance steps:
-1. ✅ Check Mode execution first (recommended)
-2. ✅ Limit to subset of hosts (recommended)
-3. ✅ Extra variables sanitization (mandatory)
+**Transparency note**: The name-based risk patterns above are this agent's implementation of Red Hat's principle to "use separate inventories for production and development." The host count thresholds are the agent's contribution for unclassifiable inventories.
 
-Shall I run in Check Mode first?
-```
+---
 
-**MEDIUM/LOW Risk**:
-```
-Target inventory: "Dev-Lab" (Risk: LOW)
+## Extra Vars Safety Scanning
 
-Proceeding with standard execution.
-No additional governance required.
-```
+### Red Hat Source
 
-## Governance Workflow
+> "Remove user access to credentials. Credentials can be configured at the organization, team, or user level."
+>
+> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.1.4*
 
-### Phase 1: Pre-Flight Validation
+### What This Means for Extra Vars
 
-Before any job launch:
+Red Hat's credential management system stores secrets securely within AAP. When users pass secrets directly in `extra_vars` (as plain-text strings), they bypass this protection -- the secret appears in job logs, activity stream, and API responses. The agent detects this anti-pattern.
 
-1. **Resolve Job Template**: Search and retrieve the target job template
-2. **Resolve Inventory**: Identify target inventory, classify risk level
-3. **Scan Variables**: Check extra_vars for plain-text secrets
-4. **Assess Scope**: Count target hosts, evaluate blast radius
+### Detection Patterns
 
-### Phase 2: Governance Decision
+The agent scans `extra_vars` key names and values for indicators of plain-text secrets:
 
-Based on risk assessment, determine execution strategy:
+**Key name patterns** (case-insensitive): `password`, `secret`, `token`, `api_key`, `apikey`, `private_key`, `ssh_key`, `access_key`, `auth`
 
-```
-IF risk == CRITICAL:
-    REQUIRE check_mode = true
-    REQUIRE limit = subset
-    REQUIRE user_approval = explicit
-    RECOMMEND maintenance_window
-ELIF risk == HIGH:
-    RECOMMEND check_mode = true
-    RECOMMEND limit = subset
-    REQUIRE user_approval = explicit
-ELIF risk == MEDIUM:
-    SUGGEST check_mode = true
-    SUGGEST limit = subset
-ELSE:
-    PROCEED with standard execution
+**Value patterns**: Strings that look like tokens (long alphanumeric strings, base64-encoded content, strings starting with common prefixes like `sk-`, `ghp_`, `Bearer`)
+
+### MCP Pattern: Job Template Launch Parameters
+
+Before launching, inspect the launch configuration:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_launch_retrieve
+Parameters: { "id": "<template_id>" }
 ```
 
-### Phase 3: Check Mode Execution
+This returns the template's expected extra_vars, defaults, and required fields.
 
-Execute in check mode and analyze results:
+### Decision Table
 
-1. **Launch**: `job_type: "check"`, `limit: "<subset>"`
-2. **Monitor**: Poll job status until completion
-3. **Analyze**: Extract changed/failed events
-4. **Report**: Present dry-run summary to user
-5. **Decide**: Ask user to approve, modify, or abort
+| Finding | Severity | Action |
+|---|---|---|
+| Secret-like key name with literal value in extra_vars | **BLOCK** | Refuse to launch. Recommend using AAP credentials instead. |
+| Secret-like key name with variable reference (`{{ }}`) | **PASS** | Variable references are acceptable (resolved at runtime) |
+| No secret indicators | **PASS** | Proceed with launch |
 
-### Phase 4: Full Execution
+**Transparency note**: The secret detection patterns above are this agent's implementation of Red Hat's recommendation to "Remove user access to credentials" (Ch. 15, Sec. 15.1.4). The regex patterns are the agent's contribution; the principle is Red Hat's.
 
-After check mode approval:
+---
 
-1. **Launch**: `job_type: "run"`, same parameters
-2. **Monitor**: Poll job status, track progress
-3. **Summarize**: Show only Changed tasks (noise reduction)
-4. **Verify**: Confirm expected changes were applied
+## Check Mode Execution
 
-### Phase 5: Rollout Expansion (Optional)
+### Red Hat Source
 
-For phased rollouts:
+> "Check mode is a way to run Ansible without making any changes on remote systems. Check mode can be useful for testing playbooks."
+>
+> -- *Ansible Playbook Guide: Check Mode*
 
-1. **Expand limit**: Next host group or percentage
-2. **Repeat Phase 3-4**: Check mode → approval → execution
-3. **Track progress**: Cumulative success/failure across phases
-4. **Complete**: Remove limit for final full deployment
+> "The `job_type` field on a job template supports `run` and `check` modes."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 9: Job Templates*
 
-## Phased Rollout Strategies
+### MCP Pattern: Launch in Check Mode
 
-### Strategy 1: Canary (Single Host First)
-
-```
-Phase 1: limit: "webservers[0]"    → 1 host (canary)
-Phase 2: limit: "webservers[0:4]"  → 5 hosts (small batch)
-Phase 3: limit: "webservers"       → All hosts (full rollout)
-```
-
-### Strategy 2: Geographic (Region by Region)
-
-```
-Phase 1: limit: "us-east"          → US East region
-Phase 2: limit: "us-west"          → US West region
-Phase 3: limit: "eu-west"          → EU West region
-Phase 4: limit: "ap-southeast"     → Asia Pacific
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_launch_create
+Parameters: {
+  "id": "<template_id>",
+  "requestBody": {
+    "job_type": "check",
+    "diff_mode": true
+  }
+}
 ```
 
-### Strategy 3: Environment Ladder
+**Key parameters**:
+- `job_type`: `"check"` -- runs playbook in check mode (no changes applied)
+- `diff_mode`: `true` -- shows what would change (file diffs, package lists)
+
+### Check Mode Limitations
+
+Per Ansible documentation, check mode has important limitations the agent must be aware of:
+
+| Module Category | Check Mode Behavior | Agent Guidance |
+|---|---|---|
+| `ansible.builtin.dnf` / `ansible.builtin.yum` | **Contacts repos, resolves dependencies, reports what would change** | Reliable for package operations |
+| `ansible.builtin.service` / `ansible.builtin.systemd` | Reports what state changes would occur | Reliable |
+| `ansible.builtin.copy` / `ansible.builtin.template` | Reports file changes with diff | Reliable |
+| `ansible.builtin.shell` / `ansible.builtin.command` | **Skipped entirely** -- check mode cannot predict command output | Warn the user: "Tasks using shell/command modules were skipped in check mode and were NOT validated" |
+| `ansible.builtin.raw` | Skipped in check mode | Same warning as shell/command |
+
+### Interpreting Check Mode Results
+
+After the check mode job completes, retrieve its events:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_job_events_list
+Parameters: { "id": "<check_mode_job_id>", "page_size": 100 }
+```
+
+And the host summary:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_job_host_summaries_list
+Parameters: { "id": "<check_mode_job_id>" }
+```
+
+**Interpretation guide**:
+
+| Host Summary Field | Meaning | Action |
+|---|---|---|
+| `failures` > 0 | Tasks would fail if executed | **STOP** -- do not proceed to full run. Report failures. |
+| `dark` > 0 | Hosts unreachable | **STOP** -- connectivity issue. Investigate before proceeding. |
+| `changed` > 0, `failures` = 0 | Changes would be applied successfully | Safe to proceed with approval |
+| `ok` > 0, `changed` = 0 | No changes needed (idempotent) | Report: "Playbook is already in desired state" |
+| `skipped` > 0 | Tasks were skipped (conditions not met or check mode limitation) | Warn about check mode limitations for skipped tasks |
+
+### Pitfalls
+
+- **Don't trust check mode blindly**: Shell/command tasks are skipped. If the playbook relies heavily on shell commands, check mode provides incomplete coverage. Warn the user.
+- **Don't skip check mode for CRITICAL risk**: Even if the user says "urgent," CRITICAL-risk deployments should always get a check mode pass per governance policy.
+- **Don't forget diff_mode**: Always set `diff_mode: true` when running check mode. Without it, you see pass/fail but not *what* would change.
+
+---
+
+## Full Execution
+
+### MCP Pattern: Launch with Full Run
+
+After check mode passes and user approves:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_launch_create
+Parameters: {
+  "id": "<template_id>",
+  "requestBody": {
+    "job_type": "run",
+    "extra_vars": { ... },
+    "limit": "<optional_host_limit>"
+  }
+}
+```
+
+### Monitoring Job Progress
+
+Poll job status until completion:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_retrieve
+Parameters: { "id": "<job_id>" }
+```
+
+**Status values**: `pending`, `waiting`, `running`, `successful`, `failed`, `error`, `canceled`
+
+### Post-Execution Summary
+
+After completion, retrieve the changed-only summary:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_job_host_summaries_list
+Parameters: { "id": "<job_id>" }
+```
+
+Report only hosts with `changed > 0` or `failures > 0` to keep the summary actionable.
+
+---
+
+## Rollback Patterns
+
+### Red Hat Source
+
+> "You can relaunch a job with the same parameters, or relaunch on only failed hosts."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 9: Job Templates (Relaunch)*
+
+### MCP Pattern: Relaunch on Failed Hosts
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_relaunch_create
+Parameters: {
+  "id": "<failed_job_id>",
+  "requestBody": {
+    "hosts": "failed",
+    "credential_passwords": {}
+  }
+}
+```
+
+### Rollback Strategies
+
+| Strategy | When to Use | MCP Pattern |
+|---|---|---|
+| **Relaunch on failed hosts** | Partial failure; retry the same playbook on hosts that failed | `jobs_relaunch_create` with `hosts: "failed"` |
+| **Rollback playbook** | Full rollback needed; separate playbook that undoes changes | Launch a different job template (the rollback template) |
+| **Revert to previous job** | Re-run the last successful job with same parameters | `jobs_relaunch_create` on the previous successful job ID |
+
+### Pitfalls
+
+- **Don't relaunch blindly**: If check mode caught a failure, relaunching the same playbook on failed hosts will produce the same failure. Fix the root cause first.
+- **Don't assume idempotent rollback**: Not all playbooks have rollback versions. If no rollback template exists, manual intervention may be required.
+
+---
+
+## Phased Rollout
+
+### Red Hat Source
+
+> "The `limit` field can be used to restrict the hosts that the job template runs against."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 9: Job Templates*
+
+> "Job slicing enables you to distribute work across multiple Ansible controller nodes."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 9: Job Templates (Job Slicing)*
+
+### Phased Rollout Pattern
+
+For CRITICAL-risk deployments targeting many hosts, roll out in phases:
+
+**Phase 1**: Canary -- single host or small group
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_launch_create
+Parameters: {
+  "id": "<template_id>",
+  "requestBody": {
+    "job_type": "run",
+    "limit": "<canary_host>"
+  }
+}
+```
+
+**Phase 2**: Verify canary success, then expand to 25%
+
+```json
+Parameters: {
+  "id": "<template_id>",
+  "requestBody": {
+    "job_type": "run",
+    "limit": "<group_name>[0:25%]"
+  }
+}
+```
+
+**Phase 3**: Full rollout after canary + 25% pass
+
+```json
+Parameters: {
+  "id": "<template_id>",
+  "requestBody": {
+    "job_type": "run"
+  }
+}
+```
+
+### Health Gate Between Phases
+
+Between each phase, check the job result:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_job_host_summaries_list
+Parameters: { "id": "<phase_job_id>" }
+```
+
+If `failures > 0` on any host, **STOP the rollout** and report. Do not proceed to the next phase.
+
+### Pitfalls
+
+- **Don't skip the canary**: Even if the user says "deploy to all," CRITICAL-risk deployments should validate on a canary first.
+- **Don't use limit patterns without verifying**: The Ansible `limit` syntax supports patterns (`host1,host2`, `group[0:5]`, `~regex`). Verify the pattern resolves to expected hosts before launching.
+
+---
+
+## Governance Workflow Summary
+
+The complete governed deployment workflow:
 
 ```
-Phase 1: Inventory: "Dev"          → Development
-Phase 2: Inventory: "Staging"      → Staging
-Phase 3: Inventory: "Production"   → Production
+1. IDENTIFY the job template and target inventory
+2. CLASSIFY inventory risk (CRITICAL / HIGH / MEDIUM / LOW)
+3. SCAN extra_vars for plain-text secrets
+4. IF CRITICAL/HIGH risk:
+   a. LAUNCH in check mode with diff_mode=true
+   b. INTERPRET check mode results
+   c. WARN about shell/command limitations
+   d. PRESENT findings and ASK for approval
+5. IF approved:
+   a. IF CRITICAL risk: Execute phased rollout (canary → 25% → full)
+   b. IF HIGH risk: Execute full run
+   c. Between phases: Verify host summaries (health gate)
+6. REPORT changed-only summary
+7. IF failure: Offer rollback options
 ```
 
-## Approval Patterns
+---
 
-### For Automated Agents
+## Cross-References
 
-The agent MUST obtain explicit user confirmation at these points:
+- **[governance-readiness.md](governance-readiness.md)** -- Assess platform readiness before first production deployment
+- **[job-troubleshooting.md](job-troubleshooting.md)** -- If deployment fails, use forensic troubleshooting to determine root cause
+- **[error-classification.md](../references/error-classification.md)** -- Classify deployment errors and determine resolution paths
 
-1. **Before Check Mode**: "I'll run this in Check Mode first on [subset]. Proceed?"
-2. **After Check Mode**: "Dry run shows [N] changes on [M] hosts. See details above. Proceed with full execution?"
-3. **Before Full Execution**: "Launching full execution against [inventory] with limit [scope]. Confirm?"
-4. **Before Rollout Expansion**: "Phase 1 succeeded on [N] hosts. Expand to [next group]?"
+---
 
-### Approval Language
+## Official Red Hat Sources
 
-Accept only unambiguous approval:
-- **Approved**: "yes", "proceed", "confirm", "go ahead", "approved", "execute"
-- **Declined**: "no", "stop", "abort", "cancel", "wait", "hold"
-- **Modify**: "change limit", "add hosts", "modify", "adjust"
+1. Red Hat AAP 2.5, Automation Controller User Guide -- Job Templates (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-job-templates. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-## Related Documentation
+2. Red Hat AAP 2.5, Automation Controller Administration Guide -- Security Best Practices (Ch. 15). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-- [Job Launching Best Practices](job-launching-best-practices.md) - Check mode, limit, extra_vars details
-- [Error Classification](../references/error-classification.md) - Post-execution error analysis
-- [Troubleshooting Jobs](troubleshooting-jobs.md) - When governance-launched jobs fail
+3. Red Hat AAP 2.5, Automation Controller User Guide -- Workflows (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-workflows. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+
+4. Red Hat AAP 2.5, Automation Controller Administration Guide -- Controller Best Practices. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+
+5. Ansible Playbook Guide -- Check Mode. https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html. Accessed 2026-02-20.
+
+---
 
 ## Quick Reference
 
-| Governance Check | CRITICAL | HIGH | MEDIUM | LOW |
-|-----------------|----------|------|--------|-----|
-| Check Mode | Required | Recommended | Suggested | Optional |
-| Limit Subset | Required | Recommended | Suggested | Optional |
-| Secret Scan | Required | Required | Required | Optional |
-| User Approval | Required | Required | Optional | None |
-| Maintenance Window | Recommended | Optional | None | None |
-| Phased Rollout | Recommended | Optional | None | None |
+| Governance Control | When Applied | MCP Tool | Key Parameter |
+|---|---|---|---|
+| Risk Classification | All deployments | `inventories_list` | Inventory name + host count |
+| Secret Scanning | All deployments | `job_templates_launch_retrieve` | extra_vars inspection |
+| Check Mode | CRITICAL + HIGH risk | `job_templates_launch_create` | `job_type: "check"`, `diff_mode: true` |
+| Approval Gate | CRITICAL + HIGH risk | N/A (human-in-the-loop) | User confirmation |
+| Phased Rollout | CRITICAL risk | `job_templates_launch_create` | `limit` parameter per phase |
+| Health Gate | Between phases | `jobs_job_host_summaries_list` | `failures` = 0 to proceed |
+| Rollback | On failure | `jobs_relaunch_create` | `hosts: "failed"` |
+| Changed-Only Summary | Post-execution | `jobs_job_host_summaries_list` | Filter `changed > 0` |

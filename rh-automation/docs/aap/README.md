@@ -1,15 +1,19 @@
 # AAP Documentation
 
-This directory contains AI-optimized documentation derived from official Red Hat Ansible Automation Platform documentation.
+Platform governance, deployment, and troubleshooting references for Ansible Automation Platform.
 
 ## Documents
 
-| Document | Priority | Description |
-|----------|----------|-------------|
-| [job-launching-best-practices.md](job-launching-best-practices.md) | P0 | Job launch governance: check mode, limit, extra_vars |
-| [deployment-governance.md](deployment-governance.md) | P0 | Deployment governance patterns and safety controls |
-| [troubleshooting-jobs.md](troubleshooting-jobs.md) | P0 | Job failure analysis and resolution patterns |
+| Document | Purpose | Use Case |
+|----------|---------|----------|
+| [governance-readiness.md](governance-readiness.md) | 7-domain platform governance assessment against Red Hat best practices | UC1: Governance Assessment |
+| [deployment-governance.md](deployment-governance.md) | Risk classification, check mode, rollback, phased rollout | UC2: Governed Deployment |
+| [job-troubleshooting.md](job-troubleshooting.md) | Event parsing, host correlation, failure patterns | UC3: Forensic Troubleshooting |
 
-## Source Attribution
+## How to Use
 
-All documentation derived from official Red Hat sources. See [SOURCES.md](../SOURCES.md) for complete attribution.
+These documents are read by skills at runtime. The skill reads the document FIRST, then queries MCP tools, then interprets results using the document's decision tables and Red Hat citations.
+
+```
+Skill reads document → Queries MCP → Interprets with Red Hat knowledge → Reports with citations
+```

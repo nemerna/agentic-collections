@@ -1,0 +1,32 @@
+---
+- name: Reset Demo Environment
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Ensure nginx is installed
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+
+    - name: Restore production web application page
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Restore working nginx configuration
+      ansible.builtin.template:
+        src: templates/webapp.conf.j2
+        dest: /etc/nginx/conf.d/webapp.conf
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Ensure nginx is started and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true

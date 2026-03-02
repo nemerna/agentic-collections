@@ -1,0 +1,47 @@
+---
+- name: Setup Demo Host - Install and Configure Nginx
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Install nginx
+      ansible.builtin.dnf:
+        name: nginx
+        state: present
+
+    - name: Create web root directory
+      ansible.builtin.file:
+        path: /var/www/html
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Deploy production web application page
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/index.html
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Deploy nginx configuration
+      ansible.builtin.template:
+        src: templates/webapp.conf.j2
+        dest: /etc/nginx/conf.d/webapp.conf
+        owner: root
+        group: root
+        mode: "0644"
+      notify: restart nginx
+
+    - name: Ensure nginx is started and enabled
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+  handlers:
+    - name: restart nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted

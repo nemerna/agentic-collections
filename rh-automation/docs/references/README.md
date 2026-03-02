@@ -1,13 +1,17 @@
-# Reference Documentation
+# References Documentation
 
-This directory contains reference material for the rh-automation knowledge base.
+Cross-cutting reference material used across multiple use cases.
 
 ## Documents
 
-| Document | Priority | Description |
-|----------|----------|-------------|
-| [error-classification.md](error-classification.md) | P0 | AAP error taxonomy: platform vs code errors |
+| Document | Purpose | Use Case |
+|----------|---------|----------|
+| [error-classification.md](error-classification.md) | Error taxonomy, classification decision trees, resolution path mapping | UC3: Forensic Troubleshooting |
 
-## Source Attribution
+## How to Use
 
-All documentation derived from official Red Hat sources. See [SOURCES.md](../SOURCES.md) for complete attribution.
+Reference documents provide classification frameworks and taxonomies. They complement the AAP-specific documents by providing structured decision-making guidance.
+
+```
+AAP doc provides failure patterns → Reference doc classifies and maps to resolution paths
+```

@@ -1,301 +1,181 @@
 ---
 name: job-failure-analyzer
 description: |
-  **CRITICAL**: This skill must be used for ALL job failure analysis. DO NOT read job events directly without forensic analysis.
+  Extract and analyze failure events from AAP jobs to classify errors and reconstruct failure timelines.
 
-  Use this skill when users request:
-  - Analyzing a failed job: "job #502 failed", "why did the deployment fail?", "analyze the failed job"
-  - Understanding job errors: "what went wrong with job X?", "show me the failure details"
-  - Error classification: "was it a script error or host issue?", "is this a platform problem?"
+  Use when:
+  - "Job #X failed", "Why did the deployment fail?"
+  - "Analyze the failed job", "What went wrong?"
+  - "Show me the failure details"
 
-  This skill performs: job event extraction, failure event identification, error pattern matching, error classification (platform vs code), and failure sequence reconstruction.
-
-  DO NOT use this skill when:
-  - Deploying to production → Use `governance-deployer` agent
-  - Checking host system facts → Use `host-fact-inspector` skill
-  - Getting resolution recommendations → Use `troubleshooting-advisor` skill
-
-  For comprehensive troubleshooting (analysis + facts + resolution), use the `forensic-troubleshooter` agent which orchestrates this skill with host-fact-inspector and troubleshooting-advisor.
-
-  **IMPORTANT**: ALWAYS use this skill instead of reading job events directly.
+  NOT for: host fact correlation (use host-fact-inspector) or resolution recommendations (use resolution-advisor).
 model: inherit
-color: blue
+color: yellow
 ---
 
-# Job Failure Analyzer Skill
-
-Deep forensic analysis of failed AAP jobs. Extracts job events, identifies failing tasks, classifies errors as platform or code issues, and reconstructs the failure sequence.
-
-**Integration with Forensic Troubleshooter Agent**: The forensic-troubleshooter agent orchestrates this skill as Step 2 (Analyze Failure) after MCP validation. For standalone failure analysis, invoke this skill directly.
+# Job Failure Analyzer
 
 ## Prerequisites
 
-**Required MCP Servers**: `aap-mcp-job-management` ([setup guide](../../README.md))
+**Required MCP Servers**:
+- `aap-mcp-job-management` - Job details, events, host summaries, stdout
 
-**Required MCP Tools**:
-- `jobs_retrieve` (from aap-mcp-job-management) - Get job details and status
-- `jobs_job_events_list` (from aap-mcp-job-management) - List job events
-- `jobs_stdout_retrieve` (from aap-mcp-job-management) - Get job stdout (optional)
-
-### Prerequisite Validation
-
-**CRITICAL**: Before executing any operations, invoke the [mcp-aap-validator](../mcp-aap-validator/SKILL.md) skill to verify MCP server availability.
-
-**Validation freshness**: Can skip if already validated in this session.
+**Verification**: Run the `aap-mcp-validator` skill with `aap-mcp-job-management` before proceeding.
 
 ## When to Use This Skill
 
-**Use this skill directly when you need**:
-- Quick failure analysis without full troubleshooting workflow
-- Error classification (platform vs code) for a specific job
-- Job event summary for reporting purposes
+Use this skill when:
+- User reports a failed job and wants analysis
+- As the first step in the forensic-troubleshooter agent workflow
+- User asks to understand what went wrong with a job
 
-**Use the forensic-troubleshooter agent when you need**:
-- Full root cause analysis (events + host facts + documentation + resolution)
-- Correlation of failure with system state
-- Resolution recommendations with Red Hat documentation backing
+Do NOT use when:
+- User wants to deploy (use `deployment-risk-analyzer` + `governed-job-launcher`)
+- User wants host fact correlation (use `host-fact-inspector` after this skill)
+- User wants resolution recommendations (use `resolution-advisor` after this skill)
 
 ## Workflow
 
-### Step 1: Retrieve Job Details
+### Step 1: Consult Troubleshooting Documentation
+
+**CRITICAL**: Document consultation MUST happen BEFORE any MCP tool invocations.
+
+**Document Consultation** (REQUIRED - Execute FIRST):
+1. **Action**: Read [job-troubleshooting.md](../../docs/aap/job-troubleshooting.md) using the Read tool to understand event extraction, failure patterns, host summary interpretation, and root cause classification
+2. **Output to user**: "I consulted [job-troubleshooting.md](docs/aap/job-troubleshooting.md) which references Red Hat's AAP 2.6 Troubleshooting Guide for failure analysis patterns."
+
+### Step 2: Retrieve Job Status
 
 **MCP Tool**: `jobs_retrieve` (from aap-mcp-job-management)
-
 **Parameters**:
-- `id`: Job ID from user request
-  - Example: `502`
+- `id`: `"<job_id>"`
 
-**Expected Output**: Job metadata including:
-- `status` - Job final status (failed, error, successful, canceled)
-- `job_template` - Template used
-- `inventory` - Target inventory
-- `limit` - Host limit applied
-- `started` - Start timestamp
-- `finished` - End timestamp
-- `elapsed` - Duration in seconds
-- `failed` - Whether job failed (boolean)
-- `launch_type` - How job was launched (manual, scheduled, etc.)
+Extract: `status`, `failed`, `job_type`, `elapsed`, `launch_type`.
 
-**Output to user**:
-```
-Job #<id> Details
-━━━━━━━━━━━━━━━━
+Per job-troubleshooting.md, the status determines the analysis path:
+- `failed` → Analyze events for `runner_on_failed`
+- `error` → Platform-level failure (check capacity, EE, credentials)
+- `canceled` → Check timeout or manual cancellation
 
-Status: <status>
-Template: "<template_name>" (ID: <template_id>)
-Inventory: "<inventory_name>"
-Limit: <limit or "none">
-Started: <timestamp>
-Duration: <elapsed> seconds
-Launch Type: <launch_type>
-```
-
-### Step 2: Extract Job Events
-
-**CRITICAL**: Document consultation MUST happen BEFORE event analysis.
-
-**Document Consultation** (REQUIRED - Execute FIRST):
-1. **Action**: Read [troubleshooting-jobs.md](../../docs/aap/troubleshooting-jobs.md) using the Read tool to understand job event types and failure patterns
-2. **Output to user**: "I consulted [troubleshooting-jobs.md](../../docs/aap/troubleshooting-jobs.md) to understand AAP job event analysis patterns."
+### Step 3: Extract Failure Events
 
 **MCP Tool**: `jobs_job_events_list` (from aap-mcp-job-management)
-
 **Parameters**:
-- `id`: Job ID
-- `page_size`: `200` (retrieve all events for thorough analysis)
+- `id`: `"<job_id>"`
+- `page_size`: `100`
 
-**Event Parsing**:
+Filter for failure-related events:
+- `runner_on_failed` -- task failures (PRIMARY)
+- `runner_on_unreachable` -- host connectivity failures (PRIMARY)
+- `playbook_on_stats` -- final summary
 
-Categorize events and extract failure details:
+From each failure event, extract:
+- `host`: which host failed
+- `task`: which task failed
+- `event_data.res.msg`: error message
+- `event_data.task_action`: Ansible module
+- `counter`: sequence number for timeline
 
-```
-For each event:
-  CASE event.event:
-    "runner_on_failed":
-      → Extract: host, task, module, error_message, stdout, stderr, return_code
-      → Add to failed_events[]
-      → Flag for error classification
+### Step 4: Retrieve Host Summaries
 
-    "runner_on_unreachable":
-      → Extract: host, error_message
-      → Add to unreachable_events[]
-      → Immediately classify as PLATFORM ISSUE
+**MCP Tool**: `jobs_job_host_summaries_list` (from aap-mcp-job-management)
+**Parameters**:
+- `id`: `"<job_id>"`
 
-    "runner_on_changed":
-      → Extract: host, task
-      → Add to changed_events[] (for context)
+Map each host's `ok`, `changed`, `failures`, `dark`, `skipped` counts.
 
-    "runner_on_ok":
-      → Count: ok_count++
+### Step 5: Classify the Failure
 
-    "runner_on_skipped":
-      → If preceded by failure on same host: mark as cascade skip
-      → Add to skipped_events[]
+Apply the classification from job-troubleshooting.md:
 
-    "playbook_on_stats":
-      → Extract final statistics
-```
+| dark > 0 | failures > 0 | Classification |
+|---|---|---|
+| Yes | No | **Platform issue**: Host connectivity |
+| No | Yes | **Code/Config issue**: Task failure |
+| Yes | Yes | **Mixed**: Both connectivity and task issues |
 
-### Step 3: Failure Sequence Reconstruction
+For each `runner_on_failed` event, match against the failure patterns in job-troubleshooting.md:
+- Pattern 1: Host Unreachable
+- Pattern 2: Module Failure (Package Operations)
+- Pattern 3: Privilege Escalation Timeout
+- Pattern 4: Service Start Failure
+- Pattern 5: Template Rendering Error
+- Pattern 6: Execution Environment Issue
 
-Reconstruct the timeline of events to understand cascade effects:
+### Step 6: Reconstruct Failure Timeline
 
-```
-Failure Timeline:
-━━━━━━━━━━━━━━━━
+Sort events by `counter` and produce a chronological failure narrative:
 
-T+<time>  [<host>] Task "<task_1>" → OK
-T+<time>  [<host>] Task "<task_2>" → OK
-T+<time>  [<host>] Task "<task_3>" → FAILED ← Root cause
-T+<time>  [<host>] Task "<task_4>" → SKIPPED (cascade from task_3 failure)
-T+<time>  [<host>] Task "<task_5>" → SKIPPED (cascade)
+1. First failure event (root cause candidate)
+2. Subsequent failures (cascade effects)
+3. Final stats (scope of impact)
 
-Root Cause: Task "<task_3>" failed on host "<host>"
-Cascade Effect: <N> subsequent tasks skipped on <host>
-```
+### Step 7: Generate Failure Analysis Report
 
-### Step 4: Error Classification
-
-**CRITICAL**: Document consultation MUST happen BEFORE classification.
-
-**Document Consultation** (REQUIRED - Execute FIRST):
-1. **Action**: Read [error-classification.md](../../docs/references/error-classification.md) using the Read tool to understand platform vs code error classification
-2. **Output to user**: "I consulted [error-classification.md](../../docs/references/error-classification.md) to classify the error as platform or code issue."
-
-**Classification Logic**:
-
-Apply the error classification taxonomy:
+**Output format** (per job-troubleshooting.md template):
 
 ```
-For each failed/unreachable event:
+## Job Failure Analysis: Job #[job_id]
 
-  IF event.event == "runner_on_unreachable":
-    Classification: PLATFORM ISSUE (95% confidence)
-    Category: Network/Connectivity
+**Job Status**: [status]
+**Elapsed Time**: [elapsed]s
+**Launch Type**: [launch_type]
 
-  ELIF error contains "sudo" or "privilege":
-    Classification: PLATFORM ISSUE (90% confidence)
-    Category: Authentication/Privilege Escalation
+### Failure Timeline
 
-  ELIF error contains "module" and "not found":
-    Classification: CODE ISSUE (90% confidence)
-    Category: Missing Collection/Module
+1. [counter] - Task "[task_name]" on host "[hostname]": [event_type]
+   Error: "[error_message]"
+   Module: [module_name]
+2. [subsequent failure events]
 
-  ELIF error contains "undefined variable" or "syntax error":
-    Classification: CODE ISSUE (95% confidence)
-    Category: Template/Logic Error
+### Host Summary
 
-  ELIF error contains "No space left" or "Cannot allocate memory":
-    Classification: PLATFORM ISSUE (99% confidence)
-    Category: Resource Exhaustion
+| Host | OK | Changed | Failed | Unreachable |
+|---|---|---|---|---|
+| [host1] | [ok] | [changed] | [failures] | [dark] |
 
-  ELIF error contains "service failed" or "failed to start":
-    Classification: MIXED (50% confidence - needs investigation)
-    Category: Service Failure
-    → Recommend: host-fact-inspector for correlation
+### Preliminary Classification
 
-  ELIF error contains "conflict" or "dependency":
-    Classification: MIXED (60% confidence - needs investigation)
-    Category: Package Management
-    → Recommend: Check repos and installed versions
+**Type**: [Platform / Code / Configuration] Issue
+**Pattern Match**: [Pattern name from failure patterns reference]
+**Evidence**: Per Red Hat's Troubleshooting Guide: "[relevant guidance from job-troubleshooting.md]"
+**Root Cause Candidate**: [first failure event analysis]
 
-  ELIF error contains "timeout":
-    Classification: PLATFORM ISSUE (70% confidence)
-    Category: Resource/Network Constraint
+### Next Steps
 
-  ELIF error contains "SELinux" or "AVC":
-    Classification: PLATFORM ISSUE (90% confidence)
-    Category: SELinux Policy
-
-  ELSE:
-    Classification: NEEDS INVESTIGATION
-    → Recommend: host-fact-inspector + troubleshooting-advisor
-```
-
-### Step 5: Failure Analysis Report
-
-**Output**:
-```
-Job Failure Analysis Report
-━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Job #<id>: <status>
-Template: "<template_name>"
-Duration: <elapsed>s
-
-Event Summary:
-  OK: <count> | Changed: <count> | Failed: <count> | Unreachable: <count> | Skipped: <count>
-
-Root Cause Analysis:
-━━━━━━━━━━━━━━━━━━━━
-
-Classification: <PLATFORM ISSUE | CODE ISSUE | MIXED>
-Confidence: <percentage>%
-Category: <category>
-
-Failing Task: "<task_name>"
-Module: <module_name>
-Host(s): <host_list>
-Error: <error_message>
-
-<If stdout/stderr available>
-stdout: <relevant_stdout>
-stderr: <relevant_stderr>
-</If>
-
-Failure Sequence:
-<timeline from Step 3>
-
-Affected Hosts:
-| Host | Status | Error Type | Error Summary |
-|------|--------|-----------|---------------|
-| <host1> | Failed | <type> | <summary> |
-| <host2> | Unreachable | Platform | <summary> |
-
-<If PLATFORM ISSUE>
-🔧 This appears to be a Platform Issue (infrastructure/environment).
-   Responsible: Infrastructure / Platform team
-   The playbook logic is likely correct, but the environment prevented execution.
-</If>
-
-<If CODE ISSUE>
-🐛 This appears to be a Code Issue (playbook/automation logic).
-   Responsible: Automation Developer
-   The environment is likely healthy, but the automation code has a bug.
-</If>
-
-<If MIXED>
-🔍 This requires further investigation to determine root cause.
-   Recommendation: Inspect host facts for affected systems.
-</If>
-
-Next Steps:
-1. <Based on classification>
-2. <Recommended action>
-3. For detailed resolution: Use the forensic-troubleshooter agent
+- Host fact correlation recommended: [yes/no, with affected hostnames]
+- Resolution advisory recommended: [yes/no, with error pattern]
 ```
 
 ## Dependencies
 
 ### Required MCP Servers
-- `aap-mcp-job-management` - Job details, events, stdout
+- `aap-mcp-job-management` - Job data and events
 
 ### Required MCP Tools
-- `jobs_retrieve` (from aap-mcp-job-management) - Get job details
-  - Parameters: id (int)
-  - Returns: Job metadata, status, timestamps
-- `jobs_job_events_list` (from aap-mcp-job-management) - List job events
-  - Parameters: id (int), page_size (int)
-  - Returns: List of job events with task details and results
-- `jobs_stdout_retrieve` (from aap-mcp-job-management) - Get job stdout (optional)
-  - Parameters: id (int)
-  - Returns: Raw job stdout text
+- `jobs_retrieve` (from job-management) - Job status
+- `jobs_job_events_list` (from job-management) - Event stream
+- `jobs_job_host_summaries_list` (from job-management) - Per-host summary
+- `jobs_stdout_retrieve` (from job-management) - Full stdout (supplementary)
 
 ### Related Skills
-- `mcp-aap-validator` - **PREREQUISITE** - Validates AAP MCP before operations
-- `host-fact-inspector` - **NEXT STEP** - Correlates failures with host system state
-- `troubleshooting-advisor` - **NEXT STEP** - Provides resolution recommendations
+- `aap-mcp-validator` - Prerequisite validation
+- `host-fact-inspector` - Next step: correlate with host facts
+- `resolution-advisor` - Next step: get resolution recommendations
+- `execution-summary` - Audit trail
 
 ### Reference Documentation
-- [troubleshooting-jobs.md](../../docs/aap/troubleshooting-jobs.md) - AAP job event types and failure patterns
-- [error-classification.md](../../docs/references/error-classification.md) - Platform vs code error taxonomy
+- [job-troubleshooting.md](../../docs/aap/job-troubleshooting.md) - Event parsing and failure patterns
+
+## Example Usage
+
+**User**: "Job #4451 failed halfway through. Analyze the logs."
+
+**Agent**:
+1. Reads job-troubleshooting.md
+2. Reports: "I consulted job-troubleshooting.md which references Red Hat's AAP 2.6 Troubleshooting Guide."
+3. Retrieves job #4451 → status: `failed`
+4. Extracts events → finds `runner_on_failed` on task "Install security package" with `ansible.builtin.dnf`, msg: "No package matching 'nonexistent-package'"
+5. Retrieves host summaries → 1 host with failures=1
+6. Classifies: Code Error (Pattern 2: Module Failure - Package Operations)
+7. Reports structured analysis with timeline, classification, and next steps

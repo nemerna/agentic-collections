@@ -1,75 +1,64 @@
 {
-  "version": "1.0",
-  "generated": "2026-02-22T00:00:00Z",
-  "relationships": [
+  "version": "2.0",
+  "last_updated": "2026-02-26",
+  "nodes": [
     {
-      "source": "aap/job-launching-best-practices.md",
-      "target": "aap/deployment-governance.md",
-      "type": "complements",
-      "description": "Job launching parameters implement the governance decisions defined in deployment-governance",
-      "confidence": 0.95,
-      "bidirectional": true
+      "id": "governance-readiness",
+      "path": "aap/governance-readiness.md",
+      "title": "AAP Governance Readiness Assessment"
     },
     {
-      "source": "aap/deployment-governance.md",
-      "target": "aap/job-launching-best-practices.md",
-      "type": "prerequisites",
-      "description": "Governance patterns require understanding of check mode, limit, and extra_vars from launching best practices",
-      "confidence": 0.90,
-      "bidirectional": false
+      "id": "deployment-governance",
+      "path": "aap/deployment-governance.md",
+      "title": "Deployment Governance"
     },
     {
-      "source": "aap/troubleshooting-jobs.md",
-      "target": "references/error-classification.md",
-      "type": "complements",
-      "description": "Troubleshooting patterns use the error classification taxonomy to categorize root causes",
-      "confidence": 0.95,
-      "bidirectional": true
+      "id": "job-troubleshooting",
+      "path": "aap/job-troubleshooting.md",
+      "title": "Job Troubleshooting"
     },
     {
-      "source": "references/error-classification.md",
-      "target": "aap/troubleshooting-jobs.md",
-      "type": "prerequisites",
-      "description": "Error classification requires the detailed failure patterns documented in troubleshooting guide",
-      "confidence": 0.85,
-      "bidirectional": false
-    },
-    {
-      "source": "aap/job-launching-best-practices.md",
-      "target": "aap/troubleshooting-jobs.md",
-      "type": "leads_to",
-      "description": "When governed launches fail, troubleshooting guide provides the forensic analysis patterns",
-      "confidence": 0.80,
-      "bidirectional": false
-    },
-    {
-      "source": "aap/deployment-governance.md",
-      "target": "references/error-classification.md",
-      "type": "leads_to",
-      "description": "Post-deployment failures are classified using the error taxonomy",
-      "confidence": 0.70,
-      "bidirectional": false
+      "id": "error-classification",
+      "path": "references/error-classification.md",
+      "title": "Error Classification Taxonomy"
     }
   ],
-  "clusters": {
-    "governance": {
-      "documents": [
-        "aap/deployment-governance.md",
-        "aap/job-launching-best-practices.md"
-      ],
-      "description": "Documents related to deployment governance and safe job launching"
+  "edges": [
+    {
+      "from": "governance-readiness",
+      "to": "deployment-governance",
+      "relationship": "precedes",
+      "description": "After assessing readiness, use deployment governance for governed execution"
     },
-    "troubleshooting": {
-      "documents": [
-        "aap/troubleshooting-jobs.md",
-        "references/error-classification.md"
-      ],
-      "description": "Documents related to forensic troubleshooting and error classification"
+    {
+      "from": "deployment-governance",
+      "to": "job-troubleshooting",
+      "relationship": "follows_on_failure",
+      "description": "If deployment fails, use troubleshooting for forensic analysis"
+    },
+    {
+      "from": "job-troubleshooting",
+      "to": "error-classification",
+      "relationship": "references",
+      "description": "Troubleshooting uses error classification for systematic error typing"
+    },
+    {
+      "from": "deployment-governance",
+      "to": "governance-readiness",
+      "relationship": "optional_precondition",
+      "description": "First production deployment may trigger readiness assessment"
+    },
+    {
+      "from": "error-classification",
+      "to": "governance-readiness",
+      "relationship": "identifies_gaps",
+      "description": "Platform errors may indicate governance gaps in readiness domains"
+    },
+    {
+      "from": "governance-readiness",
+      "to": "job-troubleshooting",
+      "relationship": "cross_reference",
+      "description": "Platform configuration issues discovered in assessment may explain job failures"
     }
-  },
-  "navigation_hints": {
-    "start_governance": "Start with aap/deployment-governance.md for risk classification, then load aap/job-launching-best-practices.md for execution parameters",
-    "start_troubleshooting": "Start with aap/troubleshooting-jobs.md for event analysis, then load references/error-classification.md for root cause classification",
-    "governance_to_troubleshooting": "If governance deployment fails, transition from governance cluster to troubleshooting cluster"
-  }
+  ]
 }

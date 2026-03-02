@@ -1,198 +1,148 @@
-# Red Hat Automation Specification Lead
+# Red Hat Automation Governance Architect
 
 ## Description
 
-This builds on the core Ansible value proposition but adds an intelligent layer for enforcing best practices. An agent could act as a proactive guide, validating that playbooks are using efficient, built-in Ansible modules instead of fragile shell commands. It could also handle sensitive, repetitive common tasks like rotating credentials on RHEL servers, ensuring these critical operations are done securely and consistently without manual intervention. This elevates Ansible from an execution engine to an intelligent automation partner.
+This collection transforms Ansible Automation Platform from an execution engine into an intelligent automation governance partner. The agent embeds official Red Hat documentation (8+ sources) to provide three capabilities that raw MCP tools cannot: governance assessment against Red Hat best practices, risk-aware deployment with check mode and rollback, and forensic failure analysis with error classification and resolution advisory.
+
+Every recommendation is traceable to official Red Hat documentation with chapter and section citations. The agent doesn't invent rules -- it implements Red Hat's published enterprise knowledge.
 
 ## Target Marketplaces
 
-- Claude Code
 - Cursor
+- Claude Code
 
-## Connected MCPs
+## Connected MCPs (6 servers)
 
-- [Red Hat AAP MCP Server](https://docs.google.com/document/d/1Rw_4LcawxxmZG4MQ6WS42AEcSSaYPk4U9SHEstnepcg/edit?tab=t.5xk0lc8690vn#heading=h.3nm84e2fkdab)
-  - `aap-mcp-job-management` - Job templates, launches, events, status
-  - `aap-mcp-inventory-management` - Inventories, hosts, groups, facts
+All 6 AAP MCP servers are required for full governance assessment. Deployment and troubleshooting workflows require a subset.
+
+| Server | URL Pattern | Purpose |
+|--------|-------------|---------|
+| `aap-mcp-job-management` | `https://${AAP_SERVER}/job_management/mcp` | Job templates, launches, events, workflows, approvals |
+| `aap-mcp-inventory-management` | `https://${AAP_SERVER}/inventory_management/mcp` | Inventories, hosts, groups, host facts |
+| `aap-mcp-configuration` | `https://${AAP_SERVER}/configuration/mcp` | Notifications, execution environments, settings |
+| `aap-mcp-security-compliance` | `https://${AAP_SERVER}/security_compliance/mcp` | Credentials, credential types |
+| `aap-mcp-system-monitoring` | `https://${AAP_SERVER}/system_monitoring/mcp` | Instance groups, activity stream, status |
+| `aap-mcp-user-management` | `https://${AAP_SERVER}/user_management/mcp` | Users, teams, roles, authenticators |
 
 ## Example Prompts
 
-**Governance & Safety (The "Gatekeeper")**
+**Governance Assessment (The "Automation Architect")**
 
-* *"I need to push the latest 'Web-App-v2' release to the Production inventory immediately."*
-  * *(Triggers: Production warnings, Check Mode suggestion, Limit enforcement)*
+* *"Assess my AAP platform's governance readiness for production deployments."*
+  * Triggers: 7-domain audit across all 6 MCP servers with Red Hat citations per finding
+
+**Governed Deployment (The "Gatekeeper")**
+
+* *"Deploy the security patch to production urgently."*
+  * Triggers: Risk classification, secret scanning, check mode, approval gate, phased rollout
 
 **Forensic Troubleshooting (The "Analyst")**
 
-* *"Job #4451 failed halfway through. Analyze the logs and tell me if it was a script error or if the host was just unreachable."*
-  * *(Triggers: Log parsing, Event filtering, Host fact checking)*
-
-**Best Practices & Development (The "Curator")** *(Use Case 4 - Future)*
-
-* *"Write a playbook task to install Nginx and start the service using `shell` commands."*
-  * *(Triggers: Anti-pattern detection, Recommendation of `redhat.rhel_system_roles`)*
+* *"Job #4451 failed halfway through. What happened?"*
+  * Triggers: Event extraction, error classification, host fact correlation, resolution advisory
 
 ## Implemented Use Cases
 
-### Use Case 1: The "Governance-First" Deployment
+### Use Case 1: Governance Readiness Assessment
 
-**Short Description:** Instead of blindly launching a job when asked, the agent acts as a Change Control gatekeeper. It verifies the target inventory, enforces "Check Mode" (Dry Run) first, and validates that the user isn't overriding critical variables insecurely.
+**Agent**: `governance-assessor`
 
-**Agent**: `governance-deployer` (agents/governance-deployer.md)
+**Workflow**: validator → governance-readiness-assessor → offer remediation → execution-summary
 
-**Workflow:**
+**7 Domains Assessed**:
+1. Workflow Governance (Red Hat AAP 2.5, Ch. 9)
+2. Notification Coverage (Red Hat AAP 2.5, Ch. 25)
+3. Access Control / RBAC (Red Hat AAP 2.5, Ch. 15, Sec. 15.2.1)
+4. Credential Security (Red Hat AAP 2.5, Ch. 15, Sec. 15.1.4-5)
+5. Execution Environments (Red Hat AAP 2.6 EE Guide)
+6. Workload Isolation (Red Hat AAP 2.5, Ch. 17)
+7. Audit Trail (Red Hat AAP 2.5, Activity Stream)
+8. External Authentication (Bonus -- Red Hat AAP 2.5, Ch. 15, Sec. 15.2.2)
 
-* **Intent Analysis:** User asks, "Deploy the new Web App version to Production."
-* **Safety Checks** (deployment-safety-checker skill):
-  * **Inventory Validation:** Agent confirms `production` inventory is used but asks user to confirm the `limit` (e.g., "Do you want to limit this to the `us-east` group first?").
-  * **Variable Sanitization:** Agent scans `extra_vars` for plain-text passwords. If found, it aborts and demands the use of an **AAP Credential**.
-* **Dry Run** (governance-launcher skill):
-  * Agent offers: "I recommend running this in **Check Mode** first to see what will change. Shall I proceed with the dry run?"
-* **Execution** (governance-launcher skill):
-  * Only after confirmation, the agent launches the job.
-* **Post-Validation** (governance-launcher skill):
-  * Agent checks the job status and summarizes *only* the "Changed" tasks, ignoring the "OK" ones (reducing noise).
+**MCP Tools Used**: `workflow_job_templates_list`, `job_templates_list`, `notification_templates_list`, `users_list`, `teams_list`, `role_user_assignments_list`, `role_team_assignments_list`, `credentials_list`, `credential_types_list`, `execution_environments_list`, `instance_groups_list`, `activity_stream_list`, `authenticators_list`
 
-**Skills:**
+**Documentation**: [governance-readiness.md](docs/aap/governance-readiness.md)
 
-| Skill | Purpose |
-|-------|---------|
-| `mcp-aap-validator` | Validate AAP MCP server connectivity |
-| `deployment-safety-checker` | Inventory risk classification, secret scanning, scope assessment |
-| `governance-launcher` | Check mode execution, dry-run analysis, governed execution, changed-only summary |
+### Use Case 2: Governed Deployment
 
-**Skill Abilities:**
+**Agent**: `governance-deployer`
 
-* Differentiate between `Check Mode` and `Run Mode`.
-* Identify "High Risk" keywords in inventories (e.g., `prod`, `pci`, `secure`).
-* Enforce the "No Plain-Text Secrets" rule proactively.
+**Workflow**: validator → deployment-risk-analyzer → governed-job-launcher → execution-summary
 
-**AAP MCP Tools:**
+**Governance Controls**:
+- Inventory risk classification (CRITICAL / HIGH / MEDIUM / LOW)
+- Extra_vars secret scanning
+- Check mode with diff_mode for CRITICAL/HIGH targets
+- Approval gate before full execution
+- Phased rollout (canary → 25% → full) for CRITICAL targets
+- Rollback via `jobs_relaunch_create` on failure
 
-* `job_templates_list` (from aap-mcp-job-management)
-* `job_templates_retrieve` (from aap-mcp-job-management)
-* `job_templates_launch_retrieve` (from aap-mcp-job-management)
-* `jobs_retrieve` (from aap-mcp-job-management)
-* `jobs_job_events_list` (from aap-mcp-job-management)
-* `inventories_retrieve` (from aap-mcp-inventory-management)
-* `hosts_list` (from aap-mcp-inventory-management)
+**MCP Tools Used**: `job_templates_list`, `job_templates_retrieve`, `job_templates_launch_retrieve`, `job_templates_launch_create`, `jobs_retrieve`, `jobs_job_events_list`, `jobs_job_host_summaries_list`, `jobs_relaunch_create`, `inventories_list`, `hosts_list`
 
-**Docs:**
+**Documentation**: [deployment-governance.md](docs/aap/deployment-governance.md)
 
-* [Red Hat AAP Controller User Guide - Launching Jobs](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/using_automation_execution/controller-job-templates#launching-job-templates)
-* [Ansible Playbook Best Practices (Check Mode)](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/using_automation_execution/assembly-controller-best-practices)
+### Use Case 3: Forensic Troubleshooting
 
-**Embedded Documentation:**
-* `docs/aap/job-launching-best-practices.md` - Check mode, limit, extra_vars, post-execution analysis
-* `docs/aap/deployment-governance.md` - Inventory risk classification, phased rollout, approval patterns
+**Agent**: `forensic-troubleshooter`
 
-### Use Case 2: Context-Aware "Forensic" Troubleshooting
+**Workflow**: validator → job-failure-analyzer → host-fact-inspector → resolution-advisor → execution-summary
 
-**Short Description:** In demos, agents usually just read the error message. In an Enterprise context, the agent must correlate the failure with **System Facts** and **Documentation** to distinguish between a "Coding Error" (Developer's fault) and "Platform Drift" (Admin's fault).
+**Analysis Capabilities**:
+- Event extraction and failure timeline reconstruction
+- Error classification: Platform / Code / Configuration
+- Host fact correlation (disk, memory, OS version, service manager)
+- Red Hat documentation-backed resolution paths
 
-**Agent**: `forensic-troubleshooter` (agents/forensic-troubleshooter.md)
+**MCP Tools Used**: `jobs_retrieve`, `jobs_job_events_list`, `jobs_job_host_summaries_list`, `jobs_stdout_retrieve`, `hosts_list`, `hosts_variable_data_retrieve`
 
-**Workflow:**
+**Documentation**: [job-troubleshooting.md](docs/aap/job-troubleshooting.md), [error-classification.md](docs/references/error-classification.md)
 
-* **Trigger:** User says, "Job #502 failed."
-* **Deep Dive** (job-failure-analyzer skill):
-  * **Log Analysis:** Agent extracts the specific task error (e.g., "Service failed to start").
-  * **Error Classification:** Classifies as Platform Issue, Code Issue, or Mixed.
-  * **Failure Sequence:** Reconstructs timeline showing cascade effects.
-* **Fact Correlation** (host-fact-inspector skill):
-  * Agent fetches `ansible_facts` for the failure host. *Is the disk full? Is the OS version supported?*
-  * Produces health assessment with platform drift detection.
-* **Knowledge Retrieval** (troubleshooting-advisor skill):
-  * Agent consults the [**Red Hat Troubleshooting Guide**](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/troubleshooting_ansible_automation_platform/troubleshoot-jobs) to see if the error matches a known platform issue.
-* **Resolution Path:**
-  * If it's a **Platform Issue**: "This looks like a `sudo` timeout. Per the docs, we should increase the timeout in the Job Template."
-  * If it's a **Code Issue**: "The module failed because the required library `python3-lxml` is missing on the target host."
+## Skills
 
-**Skills:**
-
-| Skill | Purpose |
-|-------|---------|
-| `mcp-aap-validator` | Validate AAP MCP server connectivity |
-| `job-failure-analyzer` | Job event extraction, error classification, failure sequence |
-| `host-fact-inspector` | Host fact retrieval, health assessment, platform drift detection |
-| `troubleshooting-advisor` | Documentation-backed resolution recommendations |
-
-**Skill Abilities:**
-
-* Correlate `job_events` with `host_facts` (connecting the "What" with the "Where").
-* Distinguish between "Unreachable" (Network) and "Failed" (Logic).
-* Cite official Red Hat documentation for the fix.
-
-**AAP MCP Tools:**
-
-* `jobs_retrieve` (from aap-mcp-job-management)
-* `jobs_job_events_list` (from aap-mcp-job-management)
-* `hosts_list` (from aap-mcp-inventory-management)
-* `hosts_ansible_facts_retrieve` (from aap-mcp-inventory-management)
-
-**Docs:**
-
-* [Red Hat AAP 2.6 Troubleshooting Guide (Jobs)](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/troubleshooting_ansible_automation_platform/troubleshoot-jobs)
-
-**Embedded Documentation:**
-* `docs/aap/troubleshooting-jobs.md` - 6 failure patterns with resolution steps
-* `docs/references/error-classification.md` - Platform vs code error taxonomy
-
-## Future Use Cases
-
-### Use Case 3: "Golden State" Inventory Auditing
-
-**Short Description:** The agent uses MCP to query the inventory and proactively flag hosts that deviate from the "Golden Image" standard (e.g., outdated RHEL version or missing groups).
-
-**Status**: Not yet implemented
-
-### Use Case 4: Certified Content Guardrails (The "Curator")
-
-**Short Description:** The agent proactively prevents technical debt by scanning user intent for "Anti-Patterns" (like using `shell` or `command` modules) and enforces the use of Red Hat Certified Collections from the Automation Hub.
-
-**Status**: Not yet implemented
+| Skill | Use Case | Purpose |
+|-------|----------|---------|
+| `aap-mcp-validator` | Shared | Validate AAP MCP server connectivity (all 6 servers) |
+| `governance-readiness-assessor` | UC1 | 7-domain governance assessment with Red Hat citations |
+| `deployment-risk-analyzer` | UC2 | Inventory risk classification + secret scanning |
+| `governed-job-launcher` | UC2 | Check mode + approval + phased rollout + rollback |
+| `job-failure-analyzer` | UC3 | Event extraction + error classification |
+| `host-fact-inspector` | UC3 | Host fact correlation with failures |
+| `resolution-advisor` | UC3 | Red Hat doc-backed resolution recommendations |
+| `execution-summary` | Shared | Audit trail with doc consultation tracking |
 
 ## Architecture
 
 ```
 rh-automation/
-├── README.md
-├── .claude-plugin/plugin.json
-├── .mcp.json
-├── Red Hat Automation.md (this file)
+├── .mcp.json                        # 6 AAP MCP servers
 ├── agents/
-│   ├── governance-deployer.md        # UC1: Governance-first deployment
-│   └── forensic-troubleshooter.md    # UC2: Forensic troubleshooting
+│   ├── governance-assessor.md       # UC1
+│   ├── governance-deployer.md       # UC2
+│   └── forensic-troubleshooter.md   # UC3
 ├── skills/
-│   ├── mcp-aap-validator/SKILL.md
-│   ├── deployment-safety-checker/SKILL.md
-│   ├── governance-launcher/SKILL.md
-│   ├── job-failure-analyzer/SKILL.md
-│   ├── host-fact-inspector/SKILL.md
-│   ├── troubleshooting-advisor/SKILL.md
-│   └── execution-summary/SKILL.md
-└── docs/
-    ├── INDEX.md
-    ├── SOURCES.md
-    ├── .ai-index/
-    │   ├── semantic-index.json
-    │   ├── task-to-docs-mapping.json
-    │   └── cross-reference-graph.json
-    ├── aap/
-    │   ├── README.md
-    │   ├── job-launching-best-practices.md
-    │   ├── deployment-governance.md
-    │   └── troubleshooting-jobs.md
-    └── references/
-        ├── README.md
-        └── error-classification.md
+│   ├── aap-mcp-validator/
+│   ├── governance-readiness-assessor/
+│   ├── deployment-risk-analyzer/
+│   ├── governed-job-launcher/
+│   ├── job-failure-analyzer/
+│   ├── host-fact-inspector/
+│   ├── resolution-advisor/
+│   └── execution-summary/
+├── docs/
+│   ├── aap/
+│   │   ├── governance-readiness.md
+│   │   ├── deployment-governance.md
+│   │   └── job-troubleshooting.md
+│   └── references/
+│       └── error-classification.md
+├── demo/
+│   ├── README.md
+│   ├── DEMO-SCRIPT.md
+│   └── playbooks/
+└── scripts/
+    └── setup-cursor.sh
 ```
-
-## Reference Docs
-
-* [Ansible Content Collections](https://www.redhat.com/en/technologies/management/ansible/content-collections)
-* [5 Use-cases with MCP server for Red Hat Ansible Automation Platform](https://www.youtube.com/watch?v=h6VboweM8Ww)
 
 ## Reference SMEs
 
-[Andrew Potozniak](mailto:apotozni@redhat.com) - He's been working with the Ansible Lightspeed team around MCP and could connect us to the right folks if required.
+[Andrew Potozniak](mailto:apotozni@redhat.com) - Ansible Lightspeed team, MCP server integration
