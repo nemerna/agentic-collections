@@ -22,14 +22,6 @@ Deploy applications to OpenShift using Helm charts. Supports existing charts or 
 
 See [Human-in-the-Loop Requirements](../../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
 
-**IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
-1. **Wait for user confirmation** before executing any actions
-2. **Do NOT proceed** to the next step until the user explicitly approves
-3. **Present options clearly** and wait for response
-4. **Never auto-execute** chart creation, Helm installations, or upgrades
-
-If the user says "no" or wants modifications, address their concerns before proceeding.
-
 ## Workflow
 
 ### Step 1: Check OpenShift Connection
@@ -46,9 +38,7 @@ Use kubernetes MCP to verify cluster connection:
 Is this the correct cluster and namespace? (yes/no)
 ```
 
-**WAIT for user confirmation before proceeding.** Do NOT continue until user explicitly confirms.
-
-If user says "no", wait for them to switch context and tell you to continue.
+**WAIT for user confirmation before proceeding.**
 
 ### Step 2: Detect Helm Chart
 
@@ -136,10 +126,7 @@ I'll create a Helm chart based on your project.
 Proceed with creating the Helm chart? (yes/no)
 ```
 
-**WAIT for user confirmation.** Do NOT create the chart until user explicitly says "yes".
-
-- If user says "yes" → Create chart files
-- If user says "no" → Ask what they would like to change or use a different approach
+**WAIT for user confirmation before proceeding.**
 
 Use templates from templates/helm/ to generate:
 1. Chart.yaml
@@ -263,10 +250,7 @@ helm install [release-name] [chart-path] -n [namespace] [--set options]
 **Proceed with Helm deployment?** (yes/no)
 ```
 
-**WAIT for user confirmation.** Do NOT execute the Helm install/upgrade until user explicitly says "yes".
-
-- If user says "yes" → Proceed with deployment
-- If user says "no" → Ask what they would like to change
+**WAIT for user confirmation before proceeding.**
 
 ### Step 7: Execute Deployment
 
@@ -349,31 +333,6 @@ oc logs -l app.kubernetes.io/instance=[release-name] -n [namespace] -f
 
 Your application is live!
 ```
-
-## MCP Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| `helm_list` | Check existing releases |
-| `helm_install` | Install new release |
-| `helm_upgrade` | Upgrade existing release |
-| `helm_status` | Get release status |
-| `helm_history` | Get release history |
-| `helm_rollback` | Rollback to revision |
-| `helm_uninstall` | Remove release |
-| `pods_list_in_namespace` | Monitor pod status |
-| `pods_log` | View pod logs |
-| `events_list` | Check for errors |
-
-## Output Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `RELEASE_NAME` | Helm release name | `my-app` |
-| `CHART_PATH` | Path to chart | `./chart` |
-| `CHART_VERSION` | Chart version | `0.1.0` |
-| `RELEASE_REVISION` | Current revision | `1` |
-| `ROUTE_HOST` | External URL | `my-app-ns.apps.cluster.com` |
 
 ## Reference Documentation
 

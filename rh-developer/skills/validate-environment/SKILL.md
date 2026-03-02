@@ -21,17 +21,6 @@ See [Human-in-the-Loop Requirements](../../docs/human-in-the-loop.md) for mandat
 2. Present results clearly and ask if user wants to proceed with fixes
 3. Never auto-fix issues without user approval
 
-## Trigger
-
-- User types `/validate-environment`
-- User asks "check my environment", "what tools do I need", "am I ready to deploy"
-
-## Input Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `TARGET` | What to validate: `all`, `openshift`, `rhel`, `containers` | `all` |
-
 ## Execution Flow
 
 ### Step 1: Determine Validation Scope
@@ -222,15 +211,6 @@ Options:
 ```
 
 ---
-
-## Output Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `TOOLS_OK` | List of installed tools | `git,curl,oc,helm` |
-| `TOOLS_MISSING` | List of missing tools | `skopeo` |
-| `CLUSTER_CONNECTED` | OpenShift connectivity | `true` / `false` |
-| `READY_FOR_SKILLS` | Skills that can run | `/deploy,/s2i-build` |
 
 ## Reference Documentation
 

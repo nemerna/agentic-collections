@@ -21,12 +21,6 @@ Analyze the project to detect language/framework and recommend a build strategy.
 
 See [Human-in-the-Loop Requirements](../../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
 
-**IMPORTANT:** This skill requires user confirmation before proceeding. You MUST:
-1. **Wait for user confirmation** on detected values before saving to session state
-2. **Do NOT assume** detection is correct - always present findings and ask for confirmation
-3. **Present options clearly** when multiple choices exist and wait for selection
-4. **Never auto-select** deployment strategies or images without user approval
-
 ## Workflow
 
 ### Step 1: Context Analysis
@@ -40,8 +34,9 @@ If the user provided a Git URL (e.g., `https://github.com/...`):
 
 Use the **github-mcp-server** to analyze the repository directly without cloning:
 
-1. Use GitHub MCP to list repository contents (look for indicator files)
-2. Use GitHub MCP to read key files (`package.json`, `pom.xml`, `requirements.txt`, `Dockerfile`, etc.)
+1. Use `mcp_github_get_file_contents(owner, repo, path="/")` to list repository contents
+2. Read key files using `fetch_mcp_resource` with URI format: `repo://{owner}/{repo}/contents/{file-path}`
+   - Example: `repo://myorg/myrepo/contents/package.json`
 3. Proceed with analysis as if local files
 
 ```markdown
@@ -83,7 +78,7 @@ I couldn't access the repository directly. Options:
 **Which approach do you prefer?**
 ```
 
-**WAIT for user to select an option.** Do NOT proceed until user makes a choice.
+**WAIT for user confirmation before proceeding.**
 
 **Scenario C: No Context**
 If no files and no URL:
@@ -237,7 +232,7 @@ Please confirm:
 Type 'yes' to confirm all with quick image selection, 'smart' for tailored recommendation, or tell me what to change.
 ```
 
-**WAIT for user confirmation.** Do NOT save configuration or proceed until user explicitly confirms or provides corrections.
+**WAIT for user confirmation before proceeding.**
 
 - If user says "yes" → Save configuration with quick image selection
 - If user says "smart" → Invoke `/recommend-image` skill
@@ -257,52 +252,8 @@ After successful detection, these values should be available for other skills:
 | `VERSION` | Language version | `20` |
 | `BUILDER_IMAGE` | Full S2I image reference | `registry.access.redhat.com/ubi9/nodejs-20` |
 | `BUILD_STRATEGY` | Build strategy | `Source` (S2I) or `Podman` |
-| `DEPLOYMENT_TARGET` | Deployment target | `openshift` or `rhel` |
-| `DEPLOYMENT_STRATEGY` | Deployment method | `S2I`, `Podman`, `Helm` (OpenShift) or `container`, `native` (RHEL) |
+| `CONTAINER_PORT` | Application listen port | `8080` |
 | `HELM_CHART_PATH` | Path to Helm chart | `./chart` |
-| `HELM_CHART_NAME` | Helm chart name | `my-app` |
-| `HELM_CHART_VERSION` | Helm chart version | `0.1.0` |
-| `HELM_CHART_DETECTED` | Whether Helm chart was found | `true` or `false` |
-| `RHEL_HOST` | SSH target for RHEL deployment | `user@192.168.1.100` |
-| `PYTHON_ENTRY_FILE` | Python entry point file (Python only) | `main.py` |
-| `PYTHON_APP_MODULE` | APP_MODULE value for S2I (Python only) | `main:app` |
-| `PYTHON_HAS_GUNICORN` | Whether gunicorn is in requirements (Python only) | `true` or `false` |
-
-## MCP Tools Used
-
-This skill uses:
-
-### github-mcp-server (for remote repositories)
-
-**IMPORTANT: GitHub MCP has two different patterns for browsing vs reading:**
-
-#### Browsing Repository Structure
-Use `mcp_github_get_file_contents` to **list directories**:
-```
-mcp_github_get_file_contents(owner="org", repo="repo", path="/")      → root listing
-mcp_github_get_file_contents(owner="org", repo="repo", path="src")    → src/ contents
-```
-Returns: JSON array with file metadata (name, path, sha, type, download_url)
-
-#### Reading File Contents
-Use `fetch_mcp_resource` with GitHub resource URI to **read actual file content**:
-```
-fetch_mcp_resource(server="github", uri="repo://owner/repo/contents/path/to/file")
-```
-Returns: Actual file content as text
-
-**URI Format:** `repo://{owner}/{repo}/contents/{file-path}`
-
-**Examples:**
-- `repo://RHEcosystemAppEng/sast-ai-frontend/contents/package.json`
-- `repo://facebook/react/contents/README.md`
-- `repo://myorg/myrepo/contents/src/index.ts`
-
-### Local file reading (for local projects)
-- Standard file reading capabilities (`read_file` tool)
-
-### Terminal (fallback)
-- `run_terminal_cmd` - Only if user selects "Clone & Inspect" for private repos
 
 ## Reference Documentation
 

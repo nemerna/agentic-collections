@@ -24,12 +24,6 @@ Provide intelligent, use-case-aware container image recommendations that go beyo
 
 See [Human-in-the-Loop Requirements](../../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
 
-**IMPORTANT:** This skill requires user input and confirmation. You MUST:
-1. **Wait for user responses** to all questions before proceeding
-2. **Do NOT assume** user preferences - always ask
-3. **Present options clearly** and wait for selection
-4. **Confirm final recommendation** before saving to session state
-
 ## Workflow
 
 ### Step 1: Gather Context
@@ -110,7 +104,7 @@ To recommend the optimal image, please tell me about your requirements:
 Please describe your use case or select from the options above.
 ```
 
-**WAIT for user to provide their requirements.** Do NOT proceed until user describes their use case or selects options.
+**WAIT for user confirmation before proceeding.**
 
 ### Step 3: Evaluate Image Options
 
@@ -156,7 +150,7 @@ After installing, run `/recommend-image` again for enhanced recommendations.
 - **install** - I'll install skopeo first
 ```
 
-**WAIT for user to select an option.** Do NOT proceed until user chooses.
+**WAIT for user confirmation before proceeding.**
 
 If user continues without skopeo, proceed with static data and note: "Image metadata from static reference (not verified)".
 
@@ -237,7 +231,7 @@ Based on your requirements:
 - Tell me if you have different requirements
 ```
 
-**WAIT for user to confirm or select an alternative.** Do NOT save configuration until user explicitly confirms.
+**WAIT for user confirmation before proceeding.**
 
 ### Step 5: Handle Confirmation
 
@@ -271,17 +265,6 @@ Return to Step 2 with new inputs.
 - **Serverless** → Smallest available (minimal or native binary)
 
 > **See [docs/image-selection-criteria.md](../../docs/image-selection-criteria.md)** for comprehensive image size references, LTS timelines, decision trees, and framework-specific recommendations (Quarkus, Spring Boot, Next.js, Django/Flask).
-
-## Output Variables
-
-After successful recommendation:
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `BUILDER_IMAGE` | Full image reference | `registry.access.redhat.com/ubi9/nodejs-20-minimal` |
-| `IMAGE_VARIANT` | Variant type | `minimal` |
-| `SELECTION_RATIONALE` | Why this image | "Minimal variant for production security" |
-| `ALTERNATIVES` | Fallback options | `["ubi9/nodejs-20", "ubi9/nodejs-22-minimal"]` |
 
 ## Reference Documentation
 

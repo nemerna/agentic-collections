@@ -35,35 +35,6 @@ Diagnose local Podman/Docker container issues by automatically gathering contain
 
 See [Human-in-the-Loop Requirements](../../docs/human-in-the-loop.md) for mandatory checkpoint behavior.
 
-**IMPORTANT:** This skill requires explicit user confirmation at each step. You MUST:
-1. **Wait for user confirmation** before executing diagnostic actions
-2. **Do NOT proceed** to the next step until the user explicitly approves
-3. **Present findings clearly** and ask if user wants deeper analysis
-4. **Never auto-execute** remediation actions without user approval
-
-If the user says "no" or wants to focus on specific areas, address their concerns before proceeding.
-
-## Critical: Prefer MCP Tools
-
-**IMPORTANT:** Prefer MCP tools over CLI commands for better integration and user experience:
-1. **Search for MCP tools first** - Use `ToolSearch` to load Podman MCP tools (e.g., `+podman container_inspect`) before diagnostic actions
-2. **Use MCP when available** - Prefer `container_list`, `container_inspect`, `container_logs` over `podman`/`docker` commands
-
-## Trigger
-
-- User types `/debug-container`
-- User says "container won't start", "podman run fails"
-- User says "container exits immediately", "container crashing"
-- User says "can't pull image", "image not found"
-- User says "OOM", "out of memory", "exit code 137"
-
-## Input Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `CONTAINER` | Container name or ID | Auto-detect from recent |
-| `IMAGE` | Image name to debug | From container |
-
 ## Workflow
 
 ### Step 1: Identify Target Container
@@ -81,7 +52,7 @@ What would you like me to debug?
 Select an option or enter a container name/ID:
 ```
 
-**WAIT for user response.** Do NOT proceed until user identifies the target.
+**WAIT for user confirmation before proceeding.**
 
 If user selects "List containers":
 Use Podman MCP `container_list`:
@@ -98,7 +69,7 @@ Use Podman MCP `container_list`:
 Which container would you like me to debug?
 ```
 
-**WAIT for user to select a container.**
+**WAIT for user confirmation before proceeding.**
 
 ### Step 2: Inspect Container
 
@@ -310,17 +281,7 @@ Continue to diagnosis summary? (yes/no)
 - Evidence: [from logs]
 - Impact: [application cannot access data]
 
-### Exit Code Reference
-
-| Exit Code | Meaning | Your Container |
-|-----------|---------|----------------|
-| 0 | Success | [match?] |
-| 1 | General error | [match?] |
-| 126 | Permission problem | [match?] |
-| 127 | Command not found | [match?] |
-| 137 | SIGKILL (OOM) | [match?] |
-| 139 | Segfault | [match?] |
-| 143 | SIGTERM | [match?] |
+See [debugging-patterns.md](../../docs/debugging-patterns.md) for exit code reference.
 
 ### Recommended Actions
 
@@ -363,84 +324,12 @@ Select an option:
 
 **WAIT for user to select next action.**
 
-## Exit Code Reference
-
-| Exit Code | Signal | Meaning | Common Cause |
-|-----------|--------|---------|--------------|
-| 0 | - | Success | Normal exit |
-| 1 | - | General error | Application error, unhandled exception |
-| 2 | - | Misuse of shell | Invalid arguments |
-| 126 | - | Permission denied | Cannot execute entrypoint |
-| 127 | - | Command not found | Entrypoint binary missing |
-| 128+N | Signal N | Killed by signal | See signal table |
-| 137 | SIGKILL (9) | Force killed | OOM kill, `podman kill` |
-| 139 | SIGSEGV (11) | Segmentation fault | Memory corruption |
-| 143 | SIGTERM (15) | Terminated | `podman stop`, graceful shutdown |
-
-## Common Container Issues
-
-### Startup Failures
-
-| Issue | Symptom | Diagnosis | Fix |
-|-------|---------|-----------|-----|
-| Missing entrypoint | Exit 127 | "executable not found" | Check ENTRYPOINT/CMD |
-| Wrong command | Exit 127 | "no such file" | Verify command path |
-| Permission denied | Exit 126 | "permission denied" | Check file permissions |
-| Missing dependency | Exit 1 | "cannot find module" | Add dependency to image |
-| Port conflict | Exit 1 | "address in use" | Use different port |
-
-### Runtime Issues
-
-| Issue | Symptom | Diagnosis | Fix |
-|-------|---------|-----------|-----|
-| OOM killed | Exit 137 | OOMKilled=true | Increase memory limit |
-| Volume permission | Exit 1 | "permission denied" | Use :Z/:z labels or fix perms |
-| Missing env var | Exit 1 | "undefined" errors | Add -e VAR=value |
-| Network issue | Exit 1 | "connection refused" | Check network mode |
-
-### SELinux Volume Issues
-
-On RHEL/Fedora with SELinux, volume mounts may need labels:
-
-```bash
-# Shared label (multiple containers can access)
-podman run -v /host/path:/container/path:z [image]
-
-# Private label (only this container)
-podman run -v /host/path:/container/path:Z [image]
-```
-
-## MCP Tools Used
-
-| Tool | Purpose |
-|------|---------|
-| `container_list` | List containers |
-| `container_inspect` | Get container details |
-| `container_logs` | Get container output |
-| `image_list` | Check image info |
-
-## Output Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CONTAINER_ID` | Container ID | `abc123def456` |
-| `CONTAINER_NAME` | Container name | `myapp` |
-| `CONTAINER_IMAGE` | Image used | `myapp:latest` |
-| `EXIT_CODE` | Exit code | `137` |
-| `OOM_KILLED` | OOM status | `true` / `false` |
-| `ROOT_CAUSE` | Identified cause | `Out of memory` |
-
-## Dependencies
-
-### Required MCP Servers
-- `podman` (Podman MCP server)
-
-### Related Skills
-- `/debug-rhel` - For systemd service issues on RHEL hosts
-- `/recommend-image` - To select a better base image
+For exit codes, common container issues, and SELinux volume guidance, see [debugging-patterns.md](../../docs/debugging-patterns.md).
 
 ## Reference Documentation
 
 For detailed guidance, see:
 - [docs/debugging-patterns.md](../../docs/debugging-patterns.md) - Common error patterns, exit codes
 - [docs/prerequisites.md](../../docs/prerequisites.md) - Required tools (podman)
+- `/debug-rhel` - For systemd service issues on RHEL hosts
+- `/recommend-image` - To select a better base image
