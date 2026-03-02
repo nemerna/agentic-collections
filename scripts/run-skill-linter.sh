@@ -75,7 +75,8 @@ echo ""
 while IFS= read -r skill_file; do
   skill_dir=$(dirname "$skill_file")
   skill_name=$(basename "$skill_dir")
-  collection=$(echo "$skill_dir" | cut -d'/' -f2)
+  # Pack name is first path component (strip leading ./ for user-passed paths)
+  collection=$(echo "$skill_dir" | sed 's|^\./||' | cut -d'/' -f1)
 
   # Run linter and capture output
   LINTER_OUTPUT=$(mktemp)
