@@ -254,12 +254,12 @@ Execute Ansible playbooks via AAP (Ansible Automation Platform) with dry-run cap
 - "Run the playbook and monitor status"
 
 **What it does:**
-- Saves playbook to `/tmp` directory
-- Executes via direct Ansible invocation (not configured by default)
+- Launches jobs via AAP MCP (job_templates_launch_retrieve)
+- Performs Git Flow (commit, push, sync) when playbook path differs from template
 - Monitors job status (PENDING → RUNNING → COMPLETED)
 - Reports execution results
 
-**Note**: This skill requires separate configuration (not included by default in this collection). For AAP-based playbook execution, use the `job-template-creator` skill to create job templates in AAP instead.
+**Note**: Requires AAP MCP servers configured and job templates created (use `job-template-creator` skill to create templates).
 
 ### 8. **remediation-verifier** - Remediation Verification
 Verify that CVE remediations were successfully applied.
@@ -358,8 +358,9 @@ The remediation skill orchestrates 6 specialized skills to provide complete CVE 
 - "Patch these 5 CVEs on all production servers"
 
 **Workflow:**
+0. **Validate MCP** (mcp-lightspeed-validator, mcp-aap-validator)
 1. **Impact** (cve-impact skill, if needed)
-2. **Validate** (cve-validation skill)
+2. **Validate CVE** (cve-validation skill)
 3. **Gather Context** (system-context skill)
 4. **Generate Playbook** (playbook-generator skill)
 5. **Execute** (playbook-executor skill, with user confirmation)
@@ -502,7 +503,7 @@ MCP servers are configured in `.mcp.json`:
       "args": ["run", "--rm", "-i",
                "--env", "LIGHTSPEED_CLIENT_ID",
                "--env", "LIGHTSPEED_CLIENT_SECRET",
-               "quay.io/redhat-services-prod/lightspeed-mcp:latest"],
+               "quay.io/redhat-services-prod/insights-management-tenant/insights-mcp/red-hat-lightspeed-mcp:latest"],
       "env": {
         "LIGHTSPEED_CLIENT_ID": "${LIGHTSPEED_CLIENT_ID}",
         "LIGHTSPEED_CLIENT_SECRET": "${LIGHTSPEED_CLIENT_SECRET}"
@@ -542,7 +543,7 @@ MCP servers are configured in `.mcp.json`:
 3. Test container manually:
    ```bash
    podman run --rm -i --env LIGHTSPEED_CLIENT_ID --env LIGHTSPEED_CLIENT_SECRET \
-     ghcr.io/redhat/lightspeed-mcp:latest
+     quay.io/redhat-services-prod/insights-management-tenant/insights-mcp/red-hat-lightspeed-mcp:latest
    ```
 
 ### Authentication Failures
