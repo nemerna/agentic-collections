@@ -157,7 +157,7 @@ rh-automation/
 ## References
 
 - [Red Hat Ansible Automation Platform](https://www.redhat.com/en/technologies/management/ansible)
-- [AAP 2.5 Security Best Practices](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices)
+- [AAP 2.5 Security Best Practices](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices)
 - [AAP 2.6 Troubleshooting Guide](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/troubleshooting_ansible_automation_platform/troubleshoot-jobs)
 - [AAP 2.6 Execution Environments](https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.6/html/creating_and_consuming_execution_environments)
 - [MCP Protocol Specification](https://modelcontextprotocol.io/)

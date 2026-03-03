@@ -10,8 +10,8 @@ sources:
     url: https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html
     sections: "Module return values, error conditions, check mode behavior"
     date_accessed: 2026-02-20
-  - title: "Red Hat AAP 2.5 - Automation Controller Administration Guide"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide
+  - title: "Red Hat AAP 2.5 - Configuring Automation Execution"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution
     sections: "Platform errors, capacity issues, execution environment troubleshooting"
     date_accessed: 2026-02-20
 tags: [error-classification, taxonomy, platform-errors, code-errors, configuration-errors, resolution-paths]
@@ -321,7 +321,7 @@ Errors caused by mismatches between the playbook's expectations and the target s
 
 2. Ansible Built-in Module Documentation. https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html. Accessed 2026-02-20.
 
-3. Red Hat AAP 2.5, Automation Controller Administration Guide. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+3. Red Hat AAP 2.5, Configuring Automation Execution. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 ---
 

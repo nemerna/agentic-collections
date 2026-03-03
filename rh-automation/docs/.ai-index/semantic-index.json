@@ -18,9 +18,14 @@
         "execution environment review",
         "workload isolation",
         "audit trail verification",
-        "production readiness"
+        "production readiness",
+        "cross-domain correlation",
+        "compound risk analysis",
+        "adaptive depth queries",
+        "prioritized remediation",
+        "scale calibration"
       ],
-      "use_cases": ["governance_readiness_assessment", "platform_audit", "pre_deployment_check"],
+      "use_cases": ["governance_readiness_assessment", "platform_audit", "pre_deployment_check", "compound_risk_analysis"],
       "mcp_servers_used": ["job-management", "inventory-management", "configuration", "security-compliance", "system-monitoring", "user-management"],
       "red_hat_sources": 8,
       "skills_that_read": ["governance-readiness-assessor"]
@@ -40,9 +45,15 @@
         "job template launch",
         "diff mode",
         "deployment safety",
-        "production governance"
+        "production governance",
+        "job history analysis",
+        "template launch configuration",
+        "notification bindings",
+        "workflow coverage check",
+        "module analysis",
+        "adaptive risk elevation"
       ],
-      "use_cases": ["governed_deployment", "risk_analysis", "check_mode_execution", "rollback"],
+      "use_cases": ["governed_deployment", "risk_analysis", "check_mode_execution", "rollback", "pre_deployment_context"],
       "mcp_servers_used": ["job-management", "inventory-management"],
       "red_hat_sources": 5,
       "skills_that_read": ["deployment-risk-analyzer", "governed-job-launcher"]

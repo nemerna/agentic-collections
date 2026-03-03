@@ -7,7 +7,7 @@ sources:
     sections: "Ch. 9: Job template configuration, job_type (run/check), diff_mode, limit, extra_vars, job slicing"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP 2.5 - Security Best Practices"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices
     sections: "Ch. 15: Sec. 15.1.4 Remove user access to credentials, Sec. 15.1.5 Enforce separation of duties"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP 2.5 - Workflows"
@@ -19,7 +19,7 @@ sources:
     sections: "Check mode, diff mode, limitations with shell/command modules"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP Controller Best Practices"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-best-practices
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-best-practices
     sections: "Inventory management, environment separation"
     date_accessed: 2026-02-20
 tags: [deployment, governance, check-mode, risk-classification, rollback, phased-rollout, extra-vars, secret-scanning]
@@ -77,7 +77,7 @@ A governed deployment follows a principle: **the higher the risk, the more gover
 
 > "It is best practice to use separate inventories for production and development environments."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Controller Best Practices*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Controller Best Practices*
 
 ### Classification Approach
 
@@ -126,7 +126,7 @@ Parameters: { "page_size": 1, "search": "<inventory_name>" }
 
 > "Remove user access to credentials. Credentials can be configured at the organization, team, or user level."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.1.4*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.1.4*
 
 ### What This Means for Extra Vars
 
@@ -161,6 +161,122 @@ This returns the template's expected extra_vars, defaults, and required fields.
 | No secret indicators | **PASS** | Proceed with launch |
 
 **Transparency note**: The secret detection patterns above are this agent's implementation of Red Hat's recommendation to "Remove user access to credentials" (Ch. 15, Sec. 15.1.4). The regex patterns are the agent's contribution; the principle is Red Hat's.
+
+---
+
+## Pre-Deployment Context Analysis
+
+Beyond static risk classification (inventory name, extra_vars), the agent SHOULD examine the job template's operational context -- its history, configuration, and governance bindings. These signals adapt the risk assessment to the specific scenario rather than relying solely on inventory name patterns.
+
+### Red Hat Sources
+
+> "You can set notifications on job start and job end, including job failure, for the following resources: job templates, workflow templates, organizations, and projects."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 25: Notifications*
+
+> "Workflows enable you to configure a sequence of disparate job templates and link them together in order to execute them as a single unit."
+>
+> -- *Red Hat AAP 2.5, Automation Controller User Guide, Ch. 9: Workflows*
+
+### Signal 1: Job History
+
+Check whether this job template has recent failures:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_list
+Parameters: { "page_size": 5, "job_template": "<template_id>", "order_by": "-finished" }
+```
+
+| Recent Jobs | Last Runs Status | Signal | Agent Action |
+|---|---|---|---|
+| > 0 | All successful | **CLEAR** | Proceed normally |
+| > 0 | Most recent failed | **WARN** | "This template's last run failed. Investigate before redeploying." |
+| > 0 | 2+ consecutive failures | **ELEVATED** | "This template has failed [N] consecutive times. Strongly recommend investigating root cause before retrying." |
+| 0 | N/A (never run) | **INFO** | "This template has never been executed. First run -- extra caution recommended." |
+
+**Transparency note**: Job history analysis is the agent's proactive contribution. Red Hat does not prescribe checking history before launches, but the agent uses available MCP data to provide situational awareness that a vanilla agent would not.
+
+### Signal 2: Template Launch Configuration
+
+Check whether the template allows governance overrides at launch time:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_launch_retrieve
+Parameters: { "id": "<template_id>" }
+```
+
+Examine the `ask_*_on_launch` fields:
+
+| Field | Value | Implication |
+|---|---|---|
+| `ask_job_type_on_launch` | `true` | Check mode override available -- governance can enforce dry-run |
+| `ask_job_type_on_launch` | `false` | **Check mode not overridable at launch.** Agent cannot enforce dry-run without template modification. |
+| `ask_limit_on_launch` | `true` | Phased rollout possible via `limit` parameter |
+| `ask_limit_on_launch` | `false` | **Phased rollout not possible.** Agent cannot restrict hosts at launch. |
+| `ask_variables_on_launch` | `true` | Extra vars can be overridden -- check for secret injection risk |
+| `ask_diff_mode_on_launch` | `true` | Diff mode overridable -- governance can enable detailed change reporting |
+
+**Agent Action**:
+- If `ask_job_type_on_launch` is `false` AND risk is CRITICAL/HIGH: Warn user that check mode cannot be enforced. Recommend modifying the template to enable "Prompt on launch" for job_type.
+- If `ask_limit_on_launch` is `false` AND risk is CRITICAL: Warn that phased rollout is not possible with this template configuration.
+
+### Signal 3: Notification Bindings
+
+Check whether the template has failure notifications:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_retrieve
+Parameters: { "id": "<template_id>" }
+```
+
+If the template shows no notification associations for error events:
+
+**Agent Action**: "Per Red Hat's Notifications documentation (Ch. 25), this job template has no failure notification configured. If this deployment fails, no one will be automatically alerted. Consider adding failure notifications before production use."
+
+### Signal 4: Workflow Coverage
+
+Check whether this template is wrapped in a governed workflow:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: workflow_job_templates_list
+Parameters: { "page_size": 100 }
+```
+
+If no workflows exist, or none reference this job template:
+
+**Agent Action**: "Per Red Hat's Workflow documentation (Ch. 9), this job template runs standalone -- not wrapped in a workflow. Workflows provide approval nodes, failure paths, and conditional logic. For production deployments, consider wrapping this template in a workflow."
+
+### Signal 5: Previous Run Module Analysis
+
+If job history exists, examine events from the most recent run to identify playbook characteristics that affect check mode coverage:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: jobs_job_events_list
+Parameters: { "id": "<most_recent_job_id>", "page_size": 50 }
+```
+
+Scan event task names and module types. If events show `ansible.builtin.shell` or `ansible.builtin.command` usage:
+
+**Agent Action**: Elevate the check mode warning from generic to specific: "This playbook uses shell/command modules (found in previous run events). Check mode will SKIP these tasks -- they represent [X] of [Y] total tasks and will NOT be validated in the dry run."
+
+### Adaptive Risk Enhancement
+
+After collecting all signals, the agent adjusts the base risk assessment:
+
+| Base Risk | Signals Found | Adjusted Risk | Rationale |
+|---|---|---|---|
+| CRITICAL | Recent failures + no notifications | CRITICAL (confirmed) | Maximum governance -- investigate failures first |
+| HIGH | Never run + check mode not overridable | **CRITICAL** (elevated) | First run on template that can't enforce dry-run |
+| MEDIUM | All clear + good history | MEDIUM (confirmed) | Standard governance appropriate |
+| LOW | Recent failures | **MEDIUM** (elevated) | Dev environment but template is failing -- extra caution |
+| Any | No notifications + production target | Risk + **advisory** | Flag missing notifications as a governance gap |
+
+**Transparency note**: Risk elevation based on operational signals is the agent's proactive contribution. Red Hat's documentation establishes the governance principles; the agent applies them dynamically based on what it discovers about the specific deployment scenario.
 
 ---
 
@@ -431,11 +547,11 @@ The complete governed deployment workflow:
 
 1. Red Hat AAP 2.5, Automation Controller User Guide -- Job Templates (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-job-templates. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-2. Red Hat AAP 2.5, Automation Controller Administration Guide -- Security Best Practices (Ch. 15). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+2. Red Hat AAP 2.5, Configuring Automation Execution -- Security Best Practices (Ch. 15). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 3. Red Hat AAP 2.5, Automation Controller User Guide -- Workflows (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-workflows. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-4. Red Hat AAP 2.5, Automation Controller Administration Guide -- Controller Best Practices. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+4. Red Hat AAP 2.5, Configuring Automation Execution -- Controller Best Practices. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 5. Ansible Playbook Guide -- Check Mode. https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_checkmode.html. Accessed 2026-02-20.
 

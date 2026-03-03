@@ -47,7 +47,30 @@ Do NOT use when:
 1. **Action**: Read [deployment-governance.md](../../docs/aap/deployment-governance.md) using the Read tool to understand check mode execution, interpretation, phased rollout, and rollback patterns
 2. **Output to user**: "I consulted [deployment-governance.md](docs/aap/deployment-governance.md) to understand Red Hat's check mode behavior, rollback patterns, and phased rollout strategy."
 
-### Step 2: Execute Based on Risk Level
+### Step 2: Adapt Execution Strategy Based on Risk Signals
+
+Before launching, incorporate the operational signals from the `deployment-risk-analyzer` skill's report. The launcher adapts its behavior based on what was discovered:
+
+**2a. If risk analyzer flagged recent failures**:
+- Present the failure context to the user before proceeding: "The risk analyzer found that the last [N] runs of this template failed. Would you like to investigate the most recent failure first (using forensic-troubleshooter), or proceed with the deployment?"
+- If user wants to investigate → hand off to `forensic-troubleshooter` agent
+- If user wants to proceed → continue with elevated caution
+
+**2b. If risk analyzer flagged check mode not overridable** (`ask_job_type_on_launch: false`):
+- Cannot enforce check mode at launch time
+- Inform user: "This template does not allow job_type override. Check mode cannot be enforced without modifying the template. Proceeding directly to full execution with extra scrutiny."
+- For CRITICAL risk: Recommend modifying the template first. If user declines, proceed but document the governance exception.
+
+**2c. If risk analyzer flagged shell/command modules**:
+- Elevate the check mode warning from generic to specific in Step 4: "This playbook uses [X] shell/command tasks that check mode will SKIP. Only [Y] of [Z] total tasks were validated in this dry run."
+
+**2d. If risk analyzer flagged no notifications**:
+- After successful execution, proactively recommend: "This template has no failure notifications. Per Red Hat's Ch. 25, consider adding failure notifications now that the deployment succeeded."
+
+**2e. If risk analyzer flagged standalone template (no workflow)**:
+- For CRITICAL risk: Recommend wrapping in a workflow before proceeding. If user declines, proceed but document the governance exception.
+
+### Step 3: Execute Based on Risk Level
 
 #### For CRITICAL / HIGH Risk: Check Mode First
 
@@ -62,6 +85,8 @@ Do NOT use when:
 
 Per Red Hat's *Job Templates documentation* (Ch. 9): The `job_type` field supports `"check"` mode for dry-run execution, and `diff_mode` shows what would change.
 
+**If check mode not overridable** (from Step 2b): Skip directly to full execution with elevated human-in-the-loop controls.
+
 #### For MEDIUM Risk: Direct with Confirmation
 
 Ask user for confirmation, then launch directly with `job_type: "run"`.
@@ -70,7 +95,7 @@ Ask user for confirmation, then launch directly with `job_type: "run"`.
 
 Launch with `job_type: "run"` directly (user has already been informed by risk analyzer).
 
-### Step 3: Monitor Job Progress
+### Step 4: Monitor Job Progress
 
 Poll job status until completion:
 
@@ -80,7 +105,7 @@ Poll job status until completion:
 
 Poll every few seconds. Status values: `pending`, `waiting`, `running`, `successful`, `failed`, `error`, `canceled`.
 
-### Step 4: Interpret Check Mode Results (CRITICAL/HIGH only)
+### Step 5: Interpret Check Mode Results (CRITICAL/HIGH only)
 
 After check mode completes, retrieve results:
 
@@ -102,7 +127,10 @@ After check mode completes, retrieve results:
 | `changed > 0`, `failures = 0` | Changes would be applied successfully | Present findings, ask for approval |
 | `ok > 0`, `changed = 0` | Already in desired state | Report: "No changes needed" |
 
-**Shell/command module warning**: Per Ansible check mode documentation, `shell` and `command` modules are skipped in check mode. Warn user: "Tasks using shell/command modules were skipped and were NOT validated in this dry run."
+**Shell/command module warning** (adapted based on risk analyzer findings):
+
+- **If risk analyzer detected shell/command modules** (Step 2c): Use the specific warning with task counts: "This playbook uses [X] shell/command tasks (identified from previous run analysis). These [X] tasks were SKIPPED in check mode and were NOT validated. Only [Y] of [Z] total tasks were covered by this dry run."
+- **If no prior run data available**: Use generic warning: "Tasks using shell/command modules are skipped in check mode per Ansible documentation and were NOT validated."
 
 **Output to user**:
 
@@ -110,6 +138,7 @@ After check mode completes, retrieve results:
 ## Check Mode Results — Job #[job_id]
 
 **Status**: [successful/failed]
+**Dry-Run Coverage**: [Y] of [Z] tasks validated ([percentage]%) [only if module data available from risk analyzer]
 
 ### Host Summary
 | Host | OK | Changed | Failed | Unreachable | Skipped |
@@ -121,15 +150,20 @@ After check mode completes, retrieve results:
 - [Y] tasks would fail
 - [Z] tasks were skipped (shell/command — NOT validated)
 
-### Recommendation
-[Based on results: proceed / stop / investigate]
+### Operational Context [from risk analyzer signals]
+- Job History: [last run status — clear/failed/first run]
+- Notifications: [configured/not configured — silent failures if not]
+- Workflow: [wrapped/standalone]
 
-⚠️ Per Ansible check mode documentation: shell/command tasks were skipped and require separate validation.
+### Recommendation
+[Based on results AND operational context: proceed / stop / investigate]
+
+⚠️ [Specific or generic check mode warning based on available data]
 
 **Proceed with full execution?** (yes/no)
 ```
 
-### Step 5: Full Execution (After Approval)
+### Step 6: Full Execution (After Approval)
 
 #### Standard Execution (HIGH risk or below)
 
@@ -182,7 +216,7 @@ Verify. If `failures = 0`, proceed.
 
 **Health gate between phases**: Check `jobs_job_host_summaries_list` for `failures = 0` before proceeding to next phase. If ANY failures, STOP and report.
 
-### Step 6: Post-Execution Summary
+### Step 7: Post-Execution Summary
 
 **MCP Tool**: `jobs_job_host_summaries_list` (from aap-mcp-job-management)
 **Parameters**:
@@ -203,9 +237,13 @@ Report only hosts with `changed > 0` or `failures > 0`:
 
 ### Result
 [X] hosts changed, [Y] hosts failed, [Z] hosts unchanged.
+
+### Proactive Recommendations [based on risk analyzer signals]
+[If no notifications were flagged]: "Per Red Hat's Ch. 25, this template has no failure notifications. Now that the deployment succeeded, consider adding notifications for future runs."
+[If standalone template flagged]: "This template ran outside a workflow. For ongoing production use, consider wrapping it in a workflow with approval nodes."
 ```
 
-### Step 7: Rollback (If Failure)
+### Step 8: Rollback (If Failure)
 
 If the job fails, offer rollback options per deployment-governance.md:
 
@@ -265,10 +303,13 @@ This skill requires explicit user confirmation at the following steps:
 
 ## Example Usage
 
-**User**: "Deploy the security patch to production" (after risk analyzer identified CRITICAL risk)
+**User**: "Deploy the security patch to production" (after risk analyzer identified CRITICAL risk with signals)
 
 **Agent**:
 1. Reads deployment-governance.md
-2. Launches check mode: `job_type: "check"`, `diff_mode: true`
-3. Reports: "Check mode completed. 1 host would have 3 changes, 1 failure detected (dnf package not found). Per Ansible check mode documentation, dnf contacts repos and resolves dependencies in check mode — this failure is real."
-4. Recommends: "STOP — check mode detected a failure. Do not proceed to full execution."
+2. **Adapts**: Risk analyzer flagged last run failed → asks "Last run of this template failed. Investigate first or proceed?"
+3. User says proceed → launches check mode: `job_type: "check"`, `diff_mode: true`
+4. **Adapts**: Risk analyzer detected 2 shell tasks → reports: "Dry-run coverage: 4 of 6 tasks validated (67%). 2 shell/command tasks were SKIPPED."
+5. Reports: "Check mode completed. 1 host would have 3 changes, 1 failure detected (dnf package not found). Per Ansible check mode docs, dnf contacts repos in check mode -- this failure is real."
+6. Recommends: "STOP -- check mode detected a failure. Combined with the previous run failure, this template likely has a persistent issue."
+7. **Proactive**: "Additionally, this template has no failure notifications (per Ch. 25) and runs standalone outside a workflow (per Ch. 9). Consider addressing these governance gaps."

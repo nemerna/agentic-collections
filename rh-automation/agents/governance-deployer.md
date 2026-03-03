@@ -45,10 +45,15 @@ Do NOT use when:
 
 **Invoke the deployment-risk-analyzer skill**:
 - The skill reads deployment-governance.md
-- Identifies the job template
-- Classifies inventory risk (CRITICAL / HIGH / MEDIUM / LOW)
+- Identifies the job template and classifies inventory risk (CRITICAL / HIGH / MEDIUM / LOW)
+- **Adapts**: Checks job history -- flags recent failures or first-time execution
+- **Adapts**: Checks template launch config -- verifies check mode and limit overrides are available
+- **Adapts**: Checks notification bindings -- flags templates without failure alerting
+- **Adapts**: Checks workflow coverage -- flags standalone production templates
+- **Adapts**: Analyzes previous run events -- identifies shell/command module usage for check mode coverage
 - Scans extra_vars for plain-text secrets
-- Reports risk assessment with Red Hat citations
+- **Adjusts risk level** based on operational signals (e.g., HIGH + never run + no check mode override → CRITICAL)
+- Reports risk assessment with Red Hat citations AND operational context
 
 **Document Consultation** (performed by the skill):
 The deployment-risk-analyzer skill reads [deployment-governance.md](../docs/aap/deployment-governance.md) and reports its consultation.
@@ -59,15 +64,20 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../docs/aap/
 
 **Invoke the governed-job-launcher skill**:
 - The skill reads deployment-governance.md
-- Applies governance controls based on risk level:
-  - **CRITICAL**: Check mode → interpret → approve → phased rollout
+- **Adapts to risk analyzer signals**:
+  - If recent failures flagged → offers to investigate first via forensic-troubleshooter
+  - If check mode not overridable → informs user and adapts execution path
+  - If shell/command modules detected → provides specific dry-run coverage percentage instead of generic warning
+- Applies governance controls based on adjusted risk level:
+  - **CRITICAL**: Check mode → interpret with context → approve → phased rollout
   - **HIGH**: Check mode → interpret → approve → full run
   - **MEDIUM**: Confirm → full run
   - **LOW**: Execute directly
 - Reports results with changed-only summary
+- **Proactive post-execution**: If notifications/workflows were flagged as missing, recommends addressing those governance gaps now
 
 **Human Confirmation** (REQUIRED for CRITICAL/HIGH):
-- After check mode: "Check mode results: [summary]. Proceed with full execution?"
+- After check mode: "Check mode results: [summary with coverage %]. Proceed with full execution?"
 - Between phases (CRITICAL): "Phase [N] succeeded. Proceed to Phase [N+1]?"
 - Wait for explicit user confirmation
 

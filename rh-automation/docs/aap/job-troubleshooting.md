@@ -10,8 +10,8 @@ sources:
     url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-job-templates
     sections: "Job events, host summaries, job stdout"
     date_accessed: 2026-02-20
-  - title: "Red Hat AAP 2.5 - Automation Controller Administration Guide"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide
+  - title: "Red Hat AAP 2.5 - Configuring Automation Execution"
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution
     sections: "Instance capacity, job scheduling, execution environment troubleshooting"
     date_accessed: 2026-02-20
 tags: [troubleshooting, job-failure, events, host-facts, correlation, forensic-analysis, error-patterns]
@@ -381,7 +381,7 @@ See [error-classification.md](../references/error-classification.md) for detaile
 
 2. Red Hat AAP 2.5, Automation Controller User Guide -- Job Templates (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-job-templates. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-3. Red Hat AAP 2.5, Automation Controller Administration Guide. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+3. Red Hat AAP 2.5, Configuring Automation Execution. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 ---
 

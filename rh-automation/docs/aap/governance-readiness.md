@@ -3,7 +3,7 @@ title: AAP Governance Readiness Assessment
 category: aap
 sources:
   - title: "Red Hat AAP 2.5 - Security Best Practices"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices
     sections: "Ch. 15: Sec. 15.1.2 Minimize administrative accounts, Sec. 15.1.4 Remove user access to credentials, Sec. 15.1.5 Enforce separation of duties, Sec. 15.2.1 Use teams for role-based access, Sec. 15.2.2 External authentication"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP 2.5 - Workflows"
@@ -15,7 +15,7 @@ sources:
     sections: "Ch. 25: Notification templates, inheritance hierarchy, notification types"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP 2.5 - Instance Groups"
-    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-instance-groups
+    url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-instance-groups
     sections: "Ch. 17: Instance groups, policies, max_forks, resource isolation"
     date_accessed: 2026-02-20
   - title: "Red Hat AAP 2.5 - Activity Stream"
@@ -218,15 +218,15 @@ Parameters: {
 
 > "Use teams inside of organizations to assign permissions to groups of users rather than to users individually."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.2.1*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.2.1*
 
 > "Delegate the minimum level of privileges required to run automation."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.2.1*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.2.1*
 
 > "Minimize administrative accounts...restrict to the minimum set of users."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.1.2*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.1.2*
 
 ### What This Means in Practice
 
@@ -321,11 +321,11 @@ Parameters: {
 
 > "Remove user access to credentials. Credentials can be configured at the organization, team, or user level. Red Hat recommends that credentials be defined at the organization or team level."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.1.4*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.1.4*
 
 > "Enforce separation of duties. Different credentials (SSH keys, cloud tokens) should be used for different pieces of automation. Do not share one credential across all job templates."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.1.5*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.1.5*
 
 ### What This Means in Practice
 
@@ -462,7 +462,7 @@ Red Hat provides Instance Groups for workload isolation and resource management.
 
 > "Instance groups can be used to assign jobs to run on specific sets of instances, providing workload isolation and resource management."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 17: Instance Groups*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 17: Instance Groups*
 
 Instance groups support `max_forks` settings to limit concurrent automation load, and policy settings to control instance membership.
 
@@ -572,7 +572,7 @@ The Activity Stream is automatic and cannot be configured via MCP. If no entries
 
 > "You can simplify login for your automation controller users by connecting to external account sources by LDAP, SAML 2.0, and certain OAuth providers."
 >
-> -- *Red Hat AAP 2.5, Automation Controller Administration Guide, Ch. 15, Sec. 15.2.2*
+> -- *Red Hat AAP 2.5, Configuring Automation Execution, Ch. 15, Sec. 15.2.2*
 
 ### What This Means in Practice
 
@@ -678,7 +678,7 @@ Per Red Hat's *Creating and Consuming Execution Environments* (AAP 2.6):
 
 ### Domain 6: Workload Isolation — [PASS/GAP/WARN]
 
-Per Red Hat's *Automation Controller Administration Guide* (Ch. 17: Instance Groups):
+Per Red Hat's *Configuring Automation Execution* (Ch. 17: Instance Groups):
 > "Instance groups can be used to assign jobs to run on specific sets of instances."
 
 **Finding**: [X] instance groups. [Beyond default assessment].
@@ -724,6 +724,201 @@ Per Red Hat's *Security Best Practices* (Ch. 15, Sec. 15.2.2):
 
 ---
 
+## Cross-Domain Correlation
+
+Individual domain assessments reveal single-dimension findings. Cross-domain correlation reveals **compound risks** where gaps in one domain amplify weaknesses in another. The agent MUST perform this analysis after completing all domain assessments.
+
+### Why Correlation Matters
+
+Red Hat's Security Best Practices (Ch. 15) are interconnected: RBAC enables team-based credential management, workflows enable approval gates, notifications ensure visibility. When multiple domains have gaps, the compound effect is worse than the sum of individual gaps.
+
+### Correlation Patterns
+
+After assessing all domains, check for these compound findings:
+
+#### Pattern 1: RBAC Gap + Credential Risk
+
+**Trigger**: Domain 3 (RBAC) is GAP or WARN *and* Domain 4 (Credentials) has any credentials.
+
+**Compound Finding**: Per Red Hat's Ch. 15, Sec. 15.1.4: "Credentials can be configured at the organization, team, or user level." Without teams (Domain 3), credentials are necessarily user-scoped, directly violating this guidance.
+
+**Elevated Recommendation**: "Fix RBAC first -- creating teams unlocks team-scoped credential management, which addresses both domains simultaneously."
+
+#### Pattern 2: No Workflows + No Notifications
+
+**Trigger**: Domain 1 (Workflows) is GAP *and* Domain 2 (Notifications) is GAP.
+
+**Compound Finding**: Jobs run as standalone templates (no approval gates, no failure paths) with no failure alerting. Per Ch. 9 and Ch. 25, this means a failed production job has no governance controls AND no visibility.
+
+**Elevated Recommendation**: "This is the highest-risk combination. Production failures will go unnoticed until manually discovered. Address both domains urgently."
+
+#### Pattern 3: Single Instance Group + Production/Dev Inventories
+
+**Trigger**: Domain 6 (Workload Isolation) is WARN *and* inventory data shows both production-pattern and dev-pattern inventories exist.
+
+**Additional MCP Query** (adaptive -- only when triggered):
+
+```json
+MCP Server: aap-mcp-inventory-management
+Tool: inventories_list
+Parameters: { "page_size": 100 }
+```
+
+If inventories matching both `prod`/`production` and `dev`/`development` patterns exist:
+
+**Compound Finding**: Per Ch. 17, instance groups provide workload isolation. With a single group, a runaway development job can starve production automation capacity.
+
+**Elevated Recommendation**: "Create separate instance groups for production and non-production workloads to prevent resource contention."
+
+#### Pattern 4: Multiple Superusers + No External Auth
+
+**Trigger**: Domain 3 (RBAC) shows > 1 superuser *and* Bonus Domain (External Auth) is WARN (local only).
+
+**Compound Finding**: Per Ch. 15, Sec. 15.1.2 and Sec. 15.2.2, superuser accounts with local-only authentication lack MFA and centralized lifecycle management. Password compromise has maximum blast radius.
+
+**Elevated Recommendation**: "Configure external authentication (LDAP/SAML/OIDC) to enforce MFA on superuser accounts. This addresses both RBAC and authentication gaps."
+
+### Correlation Output Template
+
+After the domain-by-domain report, include compound findings:
+
+```
+### Compound Risk Analysis
+
+[Only include this section if correlation patterns matched]
+
+⚠️ **[Pattern Name]**:
+- Domains involved: [Domain X] ([status]) + [Domain Y] ([status])
+- Per Red Hat's [source]: "[relevant quote]"
+- Combined impact: [what the compound risk means]
+- Priority action: [what to fix first and why]
+```
+
+---
+
+## Adaptive Depth Queries
+
+When a domain assessment reveals specific conditions, the agent SHOULD perform follow-up queries to deepen the finding rather than stopping at the surface-level check. This is how the assessment adapts to what it discovers.
+
+### Notification Depth: Check Actual Bindings
+
+**Trigger**: Domain 2 reports PASS (notification templates exist).
+
+**Rationale**: Templates existing doesn't mean they're attached to anything.
+
+**Follow-up Query**:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_list
+Parameters: { "page_size": 100 }
+```
+
+Examine each job template's response for notification association fields (`related.notification_templates_started`, `related.notification_templates_success`, `related.notification_templates_error`). If ALL job templates show empty notification bindings:
+
+**Revised Finding**: Downgrade Domain 2 to **WARN**: "Notification templates exist but are not bound to any job templates. Per Ch. 25: 'You can set notifications on job start and job end, including job failure' -- but only if templates are attached to resources."
+
+### Credential Depth: Check Separation of Duties
+
+**Trigger**: Domain 4 has multiple credentials (potential PASS).
+
+**Rationale**: Multiple credentials don't guarantee they're properly scoped.
+
+**Follow-up Query**:
+
+```json
+MCP Server: aap-mcp-job-management
+Tool: job_templates_list
+Parameters: { "page_size": 100 }
+```
+
+Compare each job template's `credential` or `credentials` field. If one credential ID appears across templates targeting different inventories (e.g., both dev and prod):
+
+**Revised Finding**: Downgrade Domain 4 to **WARN**: "Credential '[name]' (ID: [id]) is shared across both development and production job templates. Per Ch. 15, Sec. 15.1.5: 'Enforce separation of duties...different credentials for different pieces of automation.'"
+
+### RBAC Depth: Check Role Breadth
+
+**Trigger**: Domain 3 reports PASS (teams exist, team-based assignments).
+
+**Rationale**: Team-based assignments don't guarantee least privilege.
+
+**Follow-up Query**:
+
+```json
+MCP Server: aap-mcp-user-management
+Tool: role_team_assignments_list
+Parameters: { "page_size": 100 }
+```
+
+Cross-reference with role definitions. If any team has Admin-level access on organization-wide scope:
+
+**Revised Finding**: Downgrade Domain 3 to **WARN**: "Teams exist, but team '[name]' has Admin-level access across the organization. Per Ch. 15, Sec. 15.2.1: 'Delegate the minimum level of privileges required to run automation.'"
+
+### Scale Calibration
+
+**Trigger**: Always (after all domain assessments).
+
+**Rationale**: A 2-host lab and a 200-host enterprise have different severity thresholds.
+
+**Follow-up Queries**:
+
+```json
+MCP Server: aap-mcp-inventory-management
+Tool: inventories_list
+Parameters: { "page_size": 100 }
+```
+
+```json
+MCP Server: aap-mcp-inventory-management
+Tool: hosts_list
+Parameters: { "page_size": 1 }
+```
+
+Use total host count and inventory naming patterns to calibrate severity framing:
+
+| Scale Signal | Calibration |
+|---|---|
+| < 5 hosts, dev/lab inventory only | "Small lab/development environment. Governance gaps noted but severity calibrated to environment scale." |
+| 5-50 hosts, mixed inventories | Standard severity |
+| > 50 hosts or production-pattern inventories | "Enterprise environment with production workloads. Governance gaps carry elevated risk." |
+
+---
+
+## Prioritized Remediation Ordering
+
+Instead of listing all gaps equally, order remediation by dependency chain. Some fixes unlock others:
+
+| Priority | Domain | Rationale |
+|---|---|---|
+| 1 | RBAC (Domain 3) | Prerequisite for team-scoped credentials and role-based access |
+| 2 | Credential Security (Domain 4) | Depends on teams existing for proper scoping |
+| 3 | Workflow Governance (Domain 1) | Enables approval gates and failure paths |
+| 4 | Notification Coverage (Domain 2) | Most effective when attached to workflows/templates |
+| 5 | Execution Environments (Domain 5) | Independent -- can fix in parallel |
+| 6 | Workload Isolation (Domain 6) | Independent -- can fix in parallel |
+| 7 | External Authentication (Bonus) | Independent but high-impact for security posture |
+| 8 | Audit Trail (Domain 7) | Automatic -- no action unless missing |
+
+**Output Template**:
+
+After the domain-by-domain report, include:
+
+```
+### Recommended Fix Order
+
+Based on dependency analysis, address gaps in this order:
+
+1. **[First unfixed domain]** — [why this must be fixed first]
+   → Unlocks: [what fixing this enables]
+2. **[Second unfixed domain]** — [why this comes next]
+   → Depends on: [prerequisite from step 1]
+3. ...
+
+Domains that can be addressed in parallel: [list independent domains]
+```
+
+---
+
 ## Cross-References
 
 - **[deployment-governance.md](deployment-governance.md)** -- After assessing readiness, use this document for governed deployment execution with risk classification and check mode
@@ -734,7 +929,7 @@ Per Red Hat's *Security Best Practices* (Ch. 15, Sec. 15.2.2):
 
 ## Official Red Hat Sources
 
-1. Red Hat AAP 2.5, Automation Controller Administration Guide -- Security Best Practices (Ch. 15). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+1. Red Hat AAP 2.5, Configuring Automation Execution -- Security Best Practices (Ch. 15). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 2. Red Hat AAP 2.5, Automation Controller User Guide -- Workflows (Ch. 9). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-workflows. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
@@ -742,7 +937,7 @@ Per Red Hat's *Security Best Practices* (Ch. 15, Sec. 15.2.2):
 
 4. Red Hat AAP 2.5, Automation Controller User Guide -- RBAC (Ch. 4). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-role-based-access-controls. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
-5. Red Hat AAP 2.5, Automation Controller Administration Guide -- Instance Groups (Ch. 17). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-instance-groups. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
+5. Red Hat AAP 2.5, Configuring Automation Execution -- Instance Groups (Ch. 17). https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-instance-groups. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 
 6. Red Hat AAP 2.5, Automation Controller User Guide -- Activity Stream. https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_user_guide/controller-activity-stream. Accessed 2026-02-20. Content used under CC BY-SA 4.0.
 

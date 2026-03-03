@@ -4,9 +4,9 @@ All documentation in this collection is derived from or references official Red 
 
 ## Primary Sources
 
-### 1. Red Hat AAP 2.5 - Automation Controller Administration Guide: Security Best Practices (Ch. 15)
+### 1. Red Hat AAP 2.5 - Configuring Automation Execution: Security Best Practices (Ch. 15)
 
-**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/assembly-controller-security-best-practices
+**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-security-best-practices
 
 **Sections Used**:
 - Sec. 15.1.2: Minimize administrative accounts
@@ -66,9 +66,9 @@ All documentation in this collection is derived from or references official Red 
 
 ---
 
-### 5. Red Hat AAP 2.5 - Automation Controller Administration Guide: Instance Groups (Ch. 17)
+### 5. Red Hat AAP 2.5 - Configuring Automation Execution: Instance Groups (Ch. 17)
 
-**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-instance-groups
+**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-instance-groups
 
 **Sections Used**:
 - Instance groups for workload isolation
@@ -157,9 +157,9 @@ All documentation in this collection is derived from or references official Red 
 
 ---
 
-### 11. Red Hat AAP 2.5 - Automation Controller Administration Guide: Controller Best Practices
+### 11. Red Hat AAP 2.5 - Configuring Automation Execution: Controller Best Practices
 
-**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/automation_controller_administration_guide/controller-best-practices
+**URL**: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-best-practices
 
 **Sections Used**:
 - Inventory management
