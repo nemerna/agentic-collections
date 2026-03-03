@@ -25,224 +25,123 @@ Generate a unified health and resource report across multiple OpenShift/Kubernet
 **Required MCP Servers**: `openshift` (configured in [.mcp.json](../../.mcp.json))
 
 **Required MCP Tools** (all from `openshift` server):
-- `configuration_contexts_list` - Discover available cluster contexts
-- `nodes_top` - Node CPU and memory consumption
-- `resources_list` - List Kubernetes resources (used for Node specs and GPU detection)
-- `namespaces_list` - List namespaces per cluster
-- `projects_list` - List OpenShift projects per cluster
-- `pods_list` - List pods with status information
+- `configuration_contexts_list`
+- `nodes_top`
+- `resources_list`
+- `namespaces_list`
+- `projects_list`
+- `pods_list`
 
-**Required Environment Variables**:
-- `KUBECONFIG` - Path to kubeconfig file containing multi-cluster contexts
+**Required Environment Variables**: `KUBECONFIG` — must contain at least one cluster context. Two or more recommended for comparison.
 
-**Multi-Cluster Requirement**: The kubeconfig must contain at least one context. For meaningful comparison, two or more cluster contexts are recommended.
+**Helper Scripts** (Python 3, stdlib only — treat as black boxes):
+- [`assemble.py`](../../scripts/cluster-report/assemble.py) — resolves `$file` references into complete raw data JSON
+- [`aggregate.py`](../../scripts/cluster-report/aggregate.py) — aggregates raw data into structured report JSON
 
-### Prerequisite Validation
-
-**CRITICAL**: Before executing any operations, validate the environment in Step 0.
+**CRITICAL Script Rules**:
+- **NEVER** read the source code of `aggregate.py` or `assemble.py`
+- **NEVER** write ad-hoc Python to parse or transform MCP output
+- **NEVER** manually reconstruct data already available in MCP output
 
 ## When to Use This Skill
 
-**Use this skill when**:
+**Use when**:
 - Comparing resource utilization across clusters
-- Getting a fleet-wide overview of cluster health
-- Checking GPU availability across clusters
-- Auditing namespace and pod counts across environments
+- Getting a fleet-wide health overview
 - Preparing capacity planning reports
 
-**Do NOT use this skill when**:
-- Debugging a specific pod or workload (use `/debug-pod` instead)
-- Managing a single cluster's resources
-- Deploying or modifying cluster resources
+**Do NOT use when**:
+- Debugging a specific pod or workload (use `/debug-pod`)
 
 ## Workflow
 
 ### Step 0: Validate Environment
 
-**Action**: Verify KUBECONFIG is set and the MCP server is accessible.
-
-```bash
-# Check KUBECONFIG is set (NEVER print its value)
-if [ -z "$KUBECONFIG" ]; then
-  echo "ERROR: KUBECONFIG not set"
-else
-  echo "OK: KUBECONFIG is configured"
-fi
-```
-
-**CRITICAL**: Never expose the KUBECONFIG path or its contents to the user. Only confirm it is set.
-
-**Handle validation result**:
-- **If KUBECONFIG is set**: Continue to Step 1
-- **If KUBECONFIG is not set**: Stop and instruct user:
-  ```
-  KUBECONFIG environment variable is not set.
-
-  To configure:
-    export KUBECONFIG=/path/to/kubeconfig
-
-  For multi-cluster, merge configs:
-    export KUBECONFIG=~/.kube/config-cluster1:~/.kube/config-cluster2
-  ```
+Check that `KUBECONFIG` is set. **Never expose the path or contents** — only confirm it is set. If not set, stop and instruct the user to `export KUBECONFIG=/path/to/kubeconfig`.
 
 ### Step 1: Discover Available Clusters
 
-**MCP Tool**: `configuration_contexts_list` (from openshift)
+**MCP Tool**: `configuration_contexts_list`
 
-**Purpose**: List all kubeconfig contexts to identify available clusters.
+Present the discovered clusters (name and server URL) to the user and ask which to include.
 
-**Parameters**: None required (discovers all contexts automatically).
-
-**Expected Response**:
-```json
-[
-  {
-    "name": "prod-us",
-    "cluster": "api-prod-us-example-com:6443",
-    "server": "https://api.prod-us.example.com:6443",
-    "namespace": "default"
-  },
-  {
-    "name": "dev-eu",
-    "cluster": "api-dev-eu-example-com:6443",
-    "server": "https://api.dev-eu.example.com:6443",
-    "namespace": "default"
-  }
-]
-```
-
-**Verification Checklist**:
-- At least one context is returned
-- Server URLs are present for each context
-- No authentication errors
-
-**Output to user**: Present the discovered clusters and ask for confirmation.
-
-```markdown
-## Discovered Clusters
-
-| # | Context Name | Server |
-|---|-------------|--------|
-| 1 | prod-us     | https://api.prod-us.example.com:6443 |
-| 2 | dev-eu      | https://api.dev-eu.example.com:6443 |
-
-Generate report for all clusters, or select specific ones?
-```
-
-**WAIT**: Do not proceed until user confirms which clusters to include.
+**WAIT**: Do not proceed until user confirms cluster selection.
 
 ### Step 2: Collect Cluster Data
 
-For **each selected cluster context**, execute the following data collection steps. Pass `context=<context-name>` to every tool call.
+For each selected cluster, pass `context=<context-name>` to every tool call. Collect data using:
 
-#### Step 2a: Node Resources (CPU/Memory)
+| Manifest Key | MCP Tool | Extra Parameters | Fallback |
+|---|---|---|---|
+| `nodes_top` | `nodes_top` | — | Set null if Metrics Server unavailable |
+| `nodes_list` | `resources_list` | `apiVersion=v1`, `kind=Node` | — |
+| `projects` | `projects_list` | — | Use `namespaces_list` if fails |
+| `pods` | `pods_list` | — | — |
 
-**MCP Tool**: `nodes_top` (from openshift)
+**Error policy**: Skip unreachable clusters. Set failed fields to `null` and append the error to the cluster's `errors` array. Never abort the entire report.
 
-**Parameters**:
-```
-nodes_top(context="prod-us")
-```
+#### Persist MCP Output to Files
 
-**Purpose**: Get CPU and memory consumption for all nodes in the cluster.
+For each MCP tool call, **immediately save the output to a file** under `/tmp/cluster-report/`.
+This ensures data is available for the assembly pipeline regardless of output size.
 
-**Expected Response**: Table or list of nodes with CPU cores used/allocatable and memory used/allocatable.
+**Naming convention**: `/tmp/cluster-report/<context-short>-<field>.txt`
 
-**Key Fields to Extract**:
-- Node name
-- CPU usage (cores) and CPU capacity
-- Memory usage (bytes/GiB) and memory capacity
-- Node roles (control-plane, worker, infra)
+Use a sanitized short name for the context (e.g., `prod-us`, `dev-eu`). Create the directory first:
 
-**Error Handling**: If the Metrics Server is not installed, `nodes_top` will fail. In this case:
-- Log: `"Cluster <context>: Metrics Server not available — CPU/memory usage data unavailable"`
-- Fall back to `resources_list(context=X, apiVersion=v1, kind=Node)` for node count and capacity only (without live usage)
-- Mark usage columns as "N/A" in the report
-
-#### Step 2b: GPU Detection
-
-**MCP Tool**: `resources_list` (from openshift)
-
-**Parameters**:
-```
-resources_list(
-  context="prod-us",
-  apiVersion="v1",
-  kind="Node"
-)
+```bash
+mkdir -p /tmp/cluster-report
 ```
 
-**Purpose**: Inspect node `.status.allocatable` for GPU resources.
+**How to save**: After each MCP tool call, use Bash to write the output to disk. `$file` references
+accept **both plain text and JSON files** — no special formatting is required.
 
-**GPU Detection Logic**:
-```
-For each node in response:
-  Check node.status.allocatable for keys:
-    - "nvidia.com/gpu"
-    - "amd.com/gpu"
-    - "intel.com/gpu"
-  If any GPU key exists and value > 0:
-    Record: node_name, gpu_type, gpu_count
-  Else:
-    gpu_count = 0
-```
+If Claude Code auto-persisted the output to a file (shown as `persisted-output` in the tool result),
+reference that file path directly.
 
-**Note**: This step also provides node capacity data as fallback if Step 2a fails.
+#### Assemble Manifest
 
-#### Step 2c: Namespaces / Projects
+Write the manifest to `/tmp/cluster-report-manifest.json` with `$file` references to the saved files:
 
-**MCP Tool**: `projects_list` (from openshift) — preferred for OpenShift clusters
-
-**Parameters**:
-```
-projects_list(context="prod-us")
-```
-
-**Fallback**: If `projects_list` fails (vanilla Kubernetes cluster), use:
-```
-namespaces_list(context="prod-us")
+```json
+{
+  "generated_at": "2026-03-03T14:30:00Z",
+  "clusters": {
+    "<context-name>": {
+      "context": "<context-name>",
+      "server": "<server-url>",
+      "nodes_top": {"$file": "/tmp/cluster-report/<ctx>-nodes_top.txt"} or null,
+      "nodes_list": {"$file": "/tmp/cluster-report/<ctx>-nodes_list.txt"} or null,
+      "projects": {"$file": "/tmp/cluster-report/<ctx>-projects.txt"} or null,
+      "namespaces": {"$file": "/tmp/cluster-report/<ctx>-namespaces.txt"} or null,
+      "pods": {"$file": "/tmp/cluster-report/<ctx>-pods.txt"} or null,
+      "errors": ["<error messages for failed tools>"]
+    }
+  }
+}
 ```
 
-**Key Fields to Extract**:
-- Total count of namespaces/projects
-- List of namespace names (for per-namespace pod breakdown)
+Fields may also be inlined as raw text strings or set to `null` for failed/unavailable data.
 
-#### Step 2d: Pod Inventory
+### Step 3: Aggregate Data
 
-**MCP Tool**: `pods_list` (from openshift)
+Run the assembly and aggregation pipeline:
 
-**Parameters**:
-```
-pods_list(context="prod-us")
+```bash
+python3 ocp-admin/scripts/cluster-report/assemble.py --aggregate < /tmp/cluster-report-manifest.json
 ```
 
-**Purpose**: Get all pods across all namespaces with their status.
+If the pipeline exits with code 1, display the error JSON to the user and stop.
 
-**Key Fields to Extract**:
-- Total pod count
-- Status breakdown: Running, Pending, Succeeded, Failed, Unknown
-- Per-namespace pod counts (top 10 by pod count for the report)
+### Step 4: Render Report
 
-**Pod Status Classification**:
-```
-Running   → healthy, actively running
-Pending   → waiting for scheduling or resources
-Succeeded → completed successfully (Jobs/CronJobs)
-Failed    → terminated with error
-Unknown   → node communication lost
-```
-
-### Step 3: Generate Unified Report
-
-Assemble collected data into the consolidated report format below.
-
-**Report Structure**:
+Render the structured JSON output as markdown using this template:
 
 ```markdown
 # Multi-Cluster Report
 
 **Generated**: YYYY-MM-DDTHH:MM:SSZ
-**Clusters**: <count> clusters reporting
+**Clusters**: <clusters_reported> clusters reporting
 
 ---
 
@@ -258,15 +157,13 @@ Assemble collected data into the consolidated report format below.
 
 ## Per-Cluster Details
 
-### <context-name> (<server-url>)
+### <cluster> (<server>)
 
 #### Node Resources
 
 | Node | Role | CPU Used | CPU Total | Memory Used | Memory Total | GPUs |
 |------|------|----------|-----------|-------------|--------------|------|
 | node-1 | worker | 4 cores | 8 cores | 16 GiB | 32 GiB | 2 |
-| node-2 | worker | 3 cores | 8 cores | 12 GiB | 32 GiB | 0 |
-| node-3 | control-plane | 2 cores | 4 cores | 8 GiB | 16 GiB | 0 |
 
 #### Pod Status
 
@@ -283,8 +180,6 @@ Assemble collected data into the consolidated report format below.
 | Namespace | Pods | Running | Pending | Failed |
 |-----------|------|---------|---------|--------|
 | openshift-monitoring | 24 | 24 | 0 | 0 |
-| my-app-prod | 18 | 17 | 1 | 0 |
-| openshift-ingress | 12 | 12 | 0 | 0 |
 
 [Repeat for each cluster]
 
@@ -292,163 +187,61 @@ Assemble collected data into the consolidated report format below.
 
 ## Attention Required
 
-List any issues detected:
-- Clusters with unreachable nodes
-- Pods in Failed or Unknown state
-- Nodes with CPU or memory usage > 85%
-- Pending pods (possible resource constraints)
+[Render each item from the `attention` array]
 ```
 
-### Step 4: Offer Next Steps
+### Step 5: Offer Next Steps
 
 ```markdown
 ## Next Steps
 
 Would you like to:
 1. **Drill down** into a specific cluster or namespace
-2. **Check alerts** — query Prometheus/Alertmanager for active alerts (requires observability toolset)
-3. **Export** this report for sharing
-4. **Refresh** — re-run the report with updated data
+2. **Check alerts** — query Prometheus/Alertmanager for active alerts
+3. **Refresh** — re-run the report with updated data
 ```
 
 ## Dependencies
 
 ### Required MCP Servers
-- `openshift` - OpenShift MCP server with multi-cluster support enabled
+- `openshift` — with multi-cluster support enabled
 
 ### Required MCP Tools
+- `configuration_contexts_list`, `nodes_top`, `resources_list`, `namespaces_list`, `projects_list`, `pods_list`
 
-| Tool | Server | Purpose |
-|------|--------|---------|
-| `configuration_contexts_list` | openshift | Discover all cluster contexts from kubeconfig |
-| `nodes_top` | openshift | Get node CPU/memory metrics from Metrics Server |
-| `resources_list` | openshift | List node resources for GPU detection and capacity |
-| `namespaces_list` | openshift | List namespaces (Kubernetes fallback) |
-| `projects_list` | openshift | List OpenShift projects (preferred) |
-| `pods_list` | openshift | List all pods with status across namespaces |
+### Helper Scripts
+- [`ocp-admin/scripts/cluster-report/assemble.py`](../../scripts/cluster-report/assemble.py)
+- [`ocp-admin/scripts/cluster-report/aggregate.py`](../../scripts/cluster-report/aggregate.py)
 
 ### Related Skills
-- None currently (first skill in ocp-admin pack)
+- None currently
 
 ### Reference Documentation
-- [OpenShift MCP Server](https://github.com/openshift/openshift-mcp-server) - MCP server with multi-cluster support
-- [Kubernetes MCP Server Tools](https://github.com/containers/kubernetes-mcp-server#tools) - Full tool reference and multi-cluster configuration
+- [OpenShift MCP Server](https://github.com/openshift/openshift-mcp-server)
+- [Kubernetes MCP Server Tools](https://github.com/containers/kubernetes-mcp-server#tools)
 
 ## Error Handling
 
-### Cluster Unreachable
-
-```
-Cluster <context-name>: Connection refused
-
-The cluster at <server-url> is not reachable.
-Possible causes:
-1. Cluster is down or API server unavailable
-2. VPN not connected
-3. Credentials expired — try: oc login <server-url>
-
-Continuing with remaining clusters...
-```
-
-**Behavior**: Skip unreachable cluster, report on remaining clusters. Never fail the entire report due to one cluster being unavailable.
-
-### Metrics Server Not Available
-
-```
-Cluster <context-name>: Metrics Server not installed
-
-CPU and memory usage data is unavailable.
-Node capacity (allocatable) will be shown instead.
-
-To install Metrics Server:
-  oc apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-```
-
-**Behavior**: Fall back to node capacity from `resources_list`. Mark usage columns as "N/A".
-
-### No GPU Resources
-
-**Behavior**: Display "0" in the GPU column. This is not an error — most clusters do not have GPU nodes.
-
-### Authentication Expired
-
-```
-Cluster <context-name>: Authentication failed (401)
-
-Your credentials for this cluster have expired.
-
-To re-authenticate:
-  oc login <server-url>
-
-Or refresh your token:
-  oc whoami --show-token
-```
-
-**Behavior**: Skip cluster with auth failure, report on remaining clusters.
-
-### Empty Cluster
-
-**Behavior**: Report the cluster with all zeros. Do not skip it — an empty cluster is valid data.
-
-## Output Variables
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `CLUSTERS_REPORTED` | Number of clusters successfully queried | `2` |
-| `CLUSTERS_FAILED` | Number of clusters that failed | `1` |
-| `TOTAL_NODES` | Sum of nodes across all clusters | `16` |
-| `TOTAL_GPUS` | Sum of GPUs across all clusters | `8` |
-| `TOTAL_PODS` | Sum of pods across all clusters | `412` |
-| `ALERTS` | List of attention items detected | `["3 failed pods in prod-us"]` |
+| Error | Behavior |
+|---|---|
+| Cluster unreachable | Skip, continue with remaining clusters |
+| Metrics Server missing | Set `nodes_top` to null, show N/A for CPU/memory usage |
+| Auth expired (401) | Skip cluster, suggest `oc login <server-url>` |
+| No GPUs found | Display 0 (not an error) |
+| Empty cluster | Report with all zeros (valid data) |
 
 ## Examples
 
-### Example 1: Two-Cluster Report
+### Multi-Cluster Report
 
-**User Request**: "Show me a report across all clusters"
+**User**: "Show me a report across all clusters"
 
-**Skill Execution**:
-1. Validate KUBECONFIG is set: OK
-2. Call `configuration_contexts_list()` — discovers: prod-us, dev-eu
-3. Present cluster list, user confirms: "all"
-4. For prod-us:
-   - `nodes_top(context="prod-us")` — 12 nodes, 48/96 CPU cores
-   - `resources_list(context="prod-us", apiVersion="v1", kind="Node")` — 8 GPUs found
-   - `projects_list(context="prod-us")` — 45 projects
-   - `pods_list(context="prod-us")` — 320 pods (312 Running, 5 Pending, 3 Failed)
-5. For dev-eu:
-   - `nodes_top(context="dev-eu")` — 4 nodes, 8/32 CPU cores
-   - `resources_list(context="dev-eu", apiVersion="v1", kind="Node")` — 0 GPUs
-   - `projects_list(context="dev-eu")` — 12 projects
-   - `pods_list(context="dev-eu")` — 92 pods (87 Running, 5 Pending)
-6. Generate unified report with overview table and per-cluster details
-7. Flag: "prod-us: 3 pods in Failed state" in Attention Required section
-
-### Example 2: Single Cluster with Metrics Server Missing
-
-**User Request**: "How are my clusters doing?"
-
-**Skill Execution**:
-1. Validate KUBECONFIG is set: OK
-2. Call `configuration_contexts_list()` — discovers: staging
-3. Present single cluster, user confirms
-4. For staging:
-   - `nodes_top(context="staging")` — **FAILS**: Metrics Server not installed
-   - Fallback: `resources_list(context="staging", apiVersion="v1", kind="Node")` — 3 nodes, capacity: 24 cores, 96 GiB
-   - `projects_list(context="staging")` — 8 projects
-   - `pods_list(context="staging")` — 45 pods (42 Running, 3 Pending)
-5. Generate report with "N/A" for CPU/memory usage, show capacity only
-6. Note: "Metrics Server not installed — install for live resource usage data"
-
-### Example 3: Partial Failure
-
-**User Request**: "Compare cluster health"
-
-**Skill Execution**:
-1. Call `configuration_contexts_list()` — discovers: prod, staging, dev
-2. User confirms all three
-3. prod: data collected successfully
-4. staging: **connection refused** — cluster unreachable
-5. dev: data collected successfully
-6. Generate report for prod and dev only
-7. Attention Required: "staging: Cluster unreachable — connection refused at https://api.staging.example.com:6443"
+**Execution**:
+1. Validate KUBECONFIG — OK
+2. `configuration_contexts_list()` discovers: prod-us, dev-eu
+3. User confirms all clusters
+4. Collect `nodes_top`, `resources_list` (Nodes), `projects_list`, `pods_list` for each context
+5. Write manifest to `/tmp/cluster-report-manifest.json`
+6. Run `assemble.py --aggregate` pipeline
+7. Render structured JSON as markdown report
+8. Flag attention items (e.g., "prod-us: 3 pods in Failed state")
