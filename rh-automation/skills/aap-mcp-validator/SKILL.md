@@ -25,7 +25,7 @@ color: blue
 - `aap-mcp-system-monitoring`
 - `aap-mcp-user-management`
 
-**Environment Variables**: `AAP_SERVER`, `AAP_API_TOKEN`
+**Environment Variables**: `AAP_MCP_SERVER`, `AAP_API_TOKEN`
 
 ## When to Use This Skill
 

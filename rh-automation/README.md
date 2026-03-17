@@ -52,7 +52,7 @@ The agent extracts failure events, classifies errors (Platform/Code/Configuratio
 ### Environment Setup
 
 ```bash
-export AAP_SERVER="your-aap-server.example.com"
+export AAP_MCP_SERVER="your-aap-mcp-server.example.com"
 export AAP_API_TOKEN="your-personal-access-token"
 ```
 
