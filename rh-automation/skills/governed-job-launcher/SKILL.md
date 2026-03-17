@@ -4,12 +4,12 @@ description: |
   Execute governed job launches with check mode, approval gates, phased rollout, and rollback.
 
   Use when:
-  - After deployment-risk-analyzer has classified the deployment risk
+  - After execution-risk-analyzer has classified the execution risk
   - "Launch with check mode first", "Run the dry run"
-  - "Execute the deployment" (after risk analysis)
+  - "Execute the job" (after risk analysis)
   - "Rollback the failed job"
 
-  NOT for: risk analysis (use deployment-risk-analyzer first) or troubleshooting (use job-failure-analyzer).
+  NOT for: risk analysis (use execution-risk-analyzer first) or troubleshooting (use job-failure-analyzer).
 model: inherit
 color: red
 ---
@@ -23,36 +23,36 @@ color: red
 
 **Verification**: Run the `aap-mcp-validator` skill with `aap-mcp-job-management` before proceeding.
 
-**IMPORTANT**: This skill assumes the `deployment-risk-analyzer` skill has already been executed and its risk assessment is available. Do NOT launch jobs without prior risk analysis for CRITICAL or HIGH risk targets.
+**IMPORTANT**: This skill assumes the `execution-risk-analyzer` skill has already been executed and its risk assessment is available. Do NOT launch jobs without prior risk analysis for CRITICAL or HIGH risk targets.
 
 ## When to Use This Skill
 
 Use this skill when:
-- After `deployment-risk-analyzer` has completed risk assessment
+- After `execution-risk-analyzer` has completed risk assessment
 - Risk level has been determined and governance controls are known
 - User has been informed of risk and is ready to proceed
 
 Do NOT use when:
-- Risk analysis hasn't been performed yet (run `deployment-risk-analyzer` first)
+- Risk analysis hasn't been performed yet (run `execution-risk-analyzer` first)
 - Troubleshooting a failed job (use `job-failure-analyzer` skill)
 - Assessing platform readiness (use `governance-readiness-assessor` skill)
 
 ## Workflow
 
-### Step 1: Consult Deployment Governance Documentation
+### Step 1: Consult Execution Governance Documentation
 
 **CRITICAL**: Document consultation MUST happen BEFORE any MCP tool invocations.
 
 **Document Consultation** (REQUIRED - Execute FIRST):
-1. **Action**: Read [deployment-governance.md](../../docs/aap/deployment-governance.md) using the Read tool to understand check mode execution, interpretation, phased rollout, and rollback patterns
-2. **Output to user**: "I consulted [deployment-governance.md](docs/aap/deployment-governance.md) to understand Red Hat's check mode behavior, rollback patterns, and phased rollout strategy."
+1. **Action**: Read [execution-governance.md](../../docs/aap/execution-governance.md) using the Read tool to understand check mode execution, interpretation, phased rollout, and rollback patterns
+2. **Output to user**: "I consulted [execution-governance.md](docs/aap/execution-governance.md) to understand Red Hat's check mode behavior, rollback patterns, and phased rollout strategy."
 
 ### Step 2: Adapt Execution Strategy Based on Risk Signals
 
-Before launching, incorporate the operational signals from the `deployment-risk-analyzer` skill's report. The launcher adapts its behavior based on what was discovered:
+Before launching, incorporate the operational signals from the `execution-risk-analyzer` skill's report. The launcher adapts its behavior based on what was discovered:
 
 **2a. If risk analyzer flagged recent failures**:
-- Present the failure context to the user before proceeding: "The risk analyzer found that the last [N] runs of this template failed. Would you like to investigate the most recent failure first (using forensic-troubleshooter), or proceed with the deployment?"
+- Present the failure context to the user before proceeding: "The risk analyzer found that the last [N] runs of this template failed. Would you like to investigate the most recent failure first (using forensic-troubleshooter), or proceed with the execution?"
 - If user wants to investigate → hand off to `forensic-troubleshooter` skill
 - If user wants to proceed → continue with elevated caution
 
@@ -65,7 +65,7 @@ Before launching, incorporate the operational signals from the `deployment-risk-
 - Elevate the check mode warning from generic to specific in Step 4: "This playbook uses [X] shell/command tasks that check mode will SKIP. Only [Y] of [Z] total tasks were validated in this dry run."
 
 **2d. If risk analyzer flagged no notifications**:
-- After successful execution, proactively recommend: "This template has no failure notifications. Per Red Hat's Ch. 25, consider adding failure notifications now that the deployment succeeded."
+- After successful execution, proactively recommend: "This template has no failure notifications. Per Red Hat's Ch. 25, consider adding failure notifications now that the execution succeeded."
 
 **2e. If risk analyzer flagged standalone template (no workflow)**:
 - For CRITICAL risk: Recommend wrapping in a workflow before proceeding. If user declines, proceed but document the governance exception.
@@ -118,7 +118,7 @@ After check mode completes, retrieve results:
 - `id`: `"<check_mode_job_id>"`
 - `page_size`: `100`
 
-**Interpretation** (per deployment-governance.md):
+**Interpretation** (per execution-governance.md):
 
 | Host Summary | Meaning | Action |
 |---|---|---|
@@ -176,7 +176,7 @@ After check mode completes, retrieve results:
 
 #### Phased Rollout (CRITICAL risk)
 
-Per deployment-governance.md, CRITICAL risk deployments use phased rollout:
+Per execution-governance.md, CRITICAL risk executions use phased rollout:
 
 **Phase 1 - Canary**:
 ```json
@@ -225,7 +225,7 @@ Verify. If `failures = 0`, proceed.
 Report only hosts with `changed > 0` or `failures > 0`:
 
 ```
-## Deployment Summary — Job #[job_id]
+## Execution Summary — Job #[job_id]
 
 **Status**: [successful/failed]
 **Elapsed**: [time]
@@ -239,13 +239,13 @@ Report only hosts with `changed > 0` or `failures > 0`:
 [X] hosts changed, [Y] hosts failed, [Z] hosts unchanged.
 
 ### Proactive Recommendations [based on risk analyzer signals]
-[If no notifications were flagged]: "Per Red Hat's Ch. 25, this template has no failure notifications. Now that the deployment succeeded, consider adding notifications for future runs."
+[If no notifications were flagged]: "Per Red Hat's Ch. 25, this template has no failure notifications. Now that the execution succeeded, consider adding notifications for future runs."
 [If standalone template flagged]: "This template ran outside a workflow. For ongoing production use, consider wrapping it in a workflow with approval nodes."
 ```
 
 ### Step 8: Rollback (If Failure)
 
-If the job fails, offer rollback options per deployment-governance.md:
+If the job fails, offer rollback options per execution-governance.md:
 
 **Option 1 - Relaunch on failed hosts**:
 
@@ -273,12 +273,12 @@ If the job fails, offer rollback options per deployment-governance.md:
 - `jobs_relaunch_create` (from job-management) - Rollback/relaunch
 
 ### Related Skills
-- `deployment-risk-analyzer` - MUST run before this skill
+- `execution-risk-analyzer` - MUST run before this skill
 - `aap-mcp-validator` - Prerequisite validation
 - `execution-summary` - Audit trail after launch
 
 ### Reference Documentation
-- [deployment-governance.md](../../docs/aap/deployment-governance.md) - Check mode, rollback, phased rollout patterns
+- [execution-governance.md](../../docs/aap/execution-governance.md) - Check mode, rollback, phased rollout patterns
 
 ## Critical: Human-in-the-Loop Requirements
 
@@ -303,10 +303,10 @@ This skill requires explicit user confirmation at the following steps:
 
 ## Example Usage
 
-**User**: "Deploy the security patch to production" (after risk analyzer identified CRITICAL risk with signals)
+**User**: "Execute the security patch on production" (after risk analyzer identified CRITICAL risk with signals)
 
 **Agent**:
-1. Reads deployment-governance.md
+1. Reads execution-governance.md
 2. **Adapts**: Risk analyzer flagged last run failed → asks "Last run of this template failed. Investigate first or proceed?"
 3. User says proceed → launches check mode: `job_type: "check"`, `diff_mode: true`
 4. **Adapts**: Risk analyzer detected 2 shell tasks → reports: "Dry-run coverage: 4 of 6 tasks validated (67%). 2 shell/command tasks were SKIPPED."

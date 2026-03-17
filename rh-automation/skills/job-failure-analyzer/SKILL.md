@@ -4,7 +4,7 @@ description: |
   Extract and analyze failure events from AAP jobs to classify errors and reconstruct failure timelines.
 
   Use when:
-  - "Job #X failed", "Why did the deployment fail?"
+  - "Job #X failed", "Why did the execution fail?"
   - "Analyze the failed job", "What went wrong?"
   - "Show me the failure details"
 
@@ -30,7 +30,7 @@ Use this skill when:
 - User asks to understand what went wrong with a job
 
 Do NOT use when:
-- User wants to deploy (use `deployment-risk-analyzer` + `governed-job-launcher`)
+- User wants to execute a job (use `execution-risk-analyzer` + `governed-job-launcher`)
 - User wants host fact correlation (use `host-fact-inspector` after this skill)
 - User wants resolution recommendations (use `resolution-advisor` after this skill)
 

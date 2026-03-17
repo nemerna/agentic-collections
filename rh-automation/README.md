@@ -1,6 +1,6 @@
 # Red Hat Automation Agentic Collection
 
-Automation governance for Ansible Automation Platform. 11 skills and 4 reference docs that audit AAP configuration against Red Hat best practices, run governed deployments with check mode and rollback, and perform forensic failure analysis with error classification.
+Automation governance for Ansible Automation Platform. 11 skills and 4 reference docs that audit AAP configuration against Red Hat best practices, run governed execution with check mode and rollback, and perform forensic failure analysis with error classification.
 
 **Persona**: Red Hat Automation Governance Architect
 **Marketplaces**: Claude Code, Cursor
@@ -19,19 +19,19 @@ All recommendations cite specific Red Hat documentation (chapter and section).
 
 ### Use Case 1: Governance Assessment
 
-> "Assess my AAP platform's governance readiness for production deployments."
+> "Assess my AAP platform's governance readiness for production use."
 
 The agent audits 7 governance domains across all 6 AAP MCP servers, producing a PASS/GAP/WARN report with Red Hat citations per finding. Domains: Workflow Governance, Notification Coverage, RBAC, Credential Security, Execution Environments, Workload Isolation, Audit Trail.
 
 **Entry point**: `governance-assessor` | **Key skill**: `governance-readiness-assessor` | **Doc**: `governance-readiness.md`
 
-### Use Case 2: Governed Deployment
+### Use Case 2: Governed Execution
 
-> "Deploy the security patch to production urgently."
+> "Execute the security patch on production urgently."
 
 The agent classifies inventory risk, scans extra_vars for secrets, runs check mode before execution, and requires approval for production targets. Catches failures in dry run before they cause outages.
 
-**Entry point**: `governance-deployer` | **Key skills**: `deployment-risk-analyzer`, `governed-job-launcher` | **Doc**: `deployment-governance.md`
+**Entry point**: `governance-executor` | **Key skills**: `execution-risk-analyzer`, `governed-job-launcher` | **Doc**: `execution-governance.md`
 
 ### Use Case 3: Forensic Troubleshooting
 
@@ -61,11 +61,11 @@ export AAP_API_TOKEN="your-personal-access-token"
 | Skill | Purpose | MCP Servers |
 |-------|---------|-------------|
 | `governance-assessor` | Orchestrates platform governance audit | All 6 |
-| `governance-deployer` | Orchestrates governed deployment | job-management, inventory-management |
+| `governance-executor` | Orchestrates governed execution | job-management, inventory-management |
 | `forensic-troubleshooter` | Orchestrates failure root cause analysis | job-management, inventory-management |
 | `aap-mcp-validator` | Validate AAP MCP server connectivity | All 6 |
 | `governance-readiness-assessor` | 7-domain platform governance audit | All 6 |
-| `deployment-risk-analyzer` | Inventory risk classification + secret scanning | job-management, inventory-management |
+| `execution-risk-analyzer` | Inventory risk classification + secret scanning | job-management, inventory-management |
 | `governed-job-launcher` | Check mode + approval + phased rollout + rollback | job-management |
 | `job-failure-analyzer` | Event extraction + error classification | job-management |
 | `host-fact-inspector` | Host fact correlation with failures | inventory-management |
@@ -90,7 +90,7 @@ export AAP_API_TOKEN="your-personal-access-token"
 | Document | Content | Red Hat Sources |
 |----------|---------|----------------|
 | `governance-readiness.md` | 7-domain assessment framework | Security Best Practices, Workflows, Notifications, RBAC, EE, Instance Groups, Activity Stream, Hardening Guide |
-| `deployment-governance.md` | Risk classification, check mode, rollback, phased rollout | Job Templates, Security Best Practices, Controller Best Practices, Check Mode |
+| `execution-governance.md` | Risk classification, check mode, rollback, phased rollout | Job Templates, Security Best Practices, Controller Best Practices, Check Mode |
 | `job-troubleshooting.md` | Event parsing, host correlation, failure patterns | AAP 2.6 Troubleshooting Guide, Job Events |
 | `error-classification.md` | Error taxonomy, classification trees, resolution paths | AAP 2.6 Troubleshooting Guide, Ansible Module docs |
 
@@ -103,11 +103,11 @@ rh-automation/
 ├── .mcp.json                        # 6 AAP MCP servers
 ├── skills/
 │   ├── governance-assessor/         # UC1: Orchestrates governance audit
-│   ├── governance-deployer/         # UC2: Orchestrates governed deployment
+│   ├── governance-executor/         # UC2: Orchestrates governed execution
 │   ├── forensic-troubleshooter/     # UC3: Orchestrates failure analysis
 │   ├── aap-mcp-validator/           # Shared: MCP connectivity
 │   ├── governance-readiness-assessor/ # UC1: 7-domain assessment
-│   ├── deployment-risk-analyzer/    # UC2: Risk + secret scanning
+│   ├── execution-risk-analyzer/    # UC2: Risk + secret scanning
 │   ├── governed-job-launcher/       # UC2: Check mode + launch
 │   ├── job-failure-analyzer/        # UC3: Event extraction
 │   ├── host-fact-inspector/         # UC3: Host correlation
@@ -116,7 +116,7 @@ rh-automation/
 └── docs/
     ├── aap/
     │   ├── governance-readiness.md  # 7-domain assessment reference
-    │   ├── deployment-governance.md # Deployment execution reference
+    │   ├── execution-governance.md # Execution governance reference
     │   └── job-troubleshooting.md   # Failure analysis reference
     └── references/
         └── error-classification.md  # Error taxonomy reference

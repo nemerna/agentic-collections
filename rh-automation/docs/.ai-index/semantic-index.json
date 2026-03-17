@@ -25,18 +25,18 @@
         "prioritized remediation",
         "scale calibration"
       ],
-      "use_cases": ["governance_readiness_assessment", "platform_audit", "pre_deployment_check", "compound_risk_analysis"],
+      "use_cases": ["governance_readiness_assessment", "platform_audit", "pre_execution_check", "compound_risk_analysis"],
       "mcp_servers_used": ["job-management", "inventory-management", "configuration", "security-compliance", "system-monitoring", "user-management"],
       "red_hat_sources": 8,
       "skills_that_read": ["governance-readiness-assessor"]
     },
     {
-      "path": "aap/deployment-governance.md",
-      "title": "Deployment Governance",
+      "path": "aap/execution-governance.md",
+      "title": "Execution Governance",
       "category": "aap",
       "token_estimate": 2500,
       "semantic_keywords": [
-        "deploy to production",
+        "execute on production",
         "check mode dry run",
         "inventory risk classification",
         "secret scanning extra_vars",
@@ -44,7 +44,7 @@
         "phased rollout",
         "job template launch",
         "diff mode",
-        "deployment safety",
+        "execution safety",
         "production governance",
         "job history analysis",
         "template launch configuration",
@@ -53,10 +53,10 @@
         "module analysis",
         "adaptive risk elevation"
       ],
-      "use_cases": ["governed_deployment", "risk_analysis", "check_mode_execution", "rollback", "pre_deployment_context"],
+      "use_cases": ["governed_execution", "risk_analysis", "check_mode_execution", "rollback", "pre_execution_context"],
       "mcp_servers_used": ["job-management", "inventory-management"],
       "red_hat_sources": 5,
-      "skills_that_read": ["deployment-risk-analyzer", "governed-job-launcher"]
+      "skills_that_read": ["execution-risk-analyzer", "governed-job-launcher"]
     },
     {
       "path": "aap/job-troubleshooting.md",

@@ -12,12 +12,12 @@ User Request → Agent → Skill reads document → Skill queries MCP tools → 
 
 ### AAP Category (`docs/aap/`)
 
-Platform governance, deployment, and troubleshooting references for Ansible Automation Platform.
+Platform governance, execution, and troubleshooting references for Ansible Automation Platform.
 
 | Document | Purpose | Skills That Read It | Red Hat Sources |
 |----------|---------|-------------------|----------------|
 | [governance-readiness.md](aap/governance-readiness.md) | 7-domain platform governance assessment | `governance-readiness-assessor` | 8 sources (Security Best Practices, Workflows, Notifications, RBAC, Instance Groups, Activity Stream, EE Guide, Hardening Guide) |
-| [deployment-governance.md](aap/deployment-governance.md) | Risk classification, check mode, rollback, phased rollout | `deployment-risk-analyzer`, `governed-job-launcher` | 5 sources (Job Templates, Security Best Practices, Workflows, Check Mode, Controller Best Practices) |
+| [execution-governance.md](aap/execution-governance.md) | Risk classification, check mode, rollback, phased rollout | `execution-risk-analyzer`, `governed-job-launcher` | 5 sources (Job Templates, Security Best Practices, Workflows, Check Mode, Controller Best Practices) |
 | [job-troubleshooting.md](aap/job-troubleshooting.md) | Event parsing, host correlation, failure patterns | `job-failure-analyzer`, `host-fact-inspector` | 3 sources (Troubleshooting Guide, Job Events, Administration Guide) |
 
 ### References Category (`docs/references/`)
@@ -33,7 +33,7 @@ Cross-cutting reference material used across multiple use cases.
 | User Task | Primary Document | Secondary Document |
 |-----------|-----------------|-------------------|
 | "Assess governance readiness" | governance-readiness.md | -- |
-| "Deploy to production" | deployment-governance.md | governance-readiness.md (optional pre-check) |
+| "Execute on production" | execution-governance.md | governance-readiness.md (optional pre-check) |
 | "Analyze failed job" | job-troubleshooting.md | error-classification.md |
 | "How to fix this error?" | error-classification.md | job-troubleshooting.md |
 

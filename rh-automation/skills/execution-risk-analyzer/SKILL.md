@@ -1,20 +1,20 @@
 ---
-name: deployment-risk-analyzer
+name: execution-risk-analyzer
 description: |
-  Analyze deployment risk by classifying inventory, scanning extra_vars for secrets, and assessing scope.
+  Analyze execution risk by classifying inventory, scanning extra_vars for secrets, and assessing scope.
 
   Use when:
-  - "Deploy to production" (as first step before launch)
-  - "Is this deployment safe?"
-  - "Check deployment risk"
-  - "Validate the deployment target"
+  - "Execute on production", "Deploy to production" (as first step before launch)
+  - "Is this execution safe?"
+  - "Check execution risk"
+  - "Validate the execution target"
 
   NOT for: launching jobs (use governed-job-launcher) or troubleshooting failures (use job-failure-analyzer).
 model: inherit
 color: yellow
 ---
 
-# Deployment Risk Analyzer
+# Execution Risk Analyzer
 
 ## Prerequisites
 
@@ -27,10 +27,10 @@ color: yellow
 ## When to Use This Skill
 
 Use this skill when:
-- User requests a deployment to any environment
-- Before any job template launch (as part of governance-deployer workflow)
-- User asks to check if a deployment is safe
-- User asks to validate deployment parameters
+- User requests a job execution targeting any environment
+- Before any job template launch (as part of governance-executor workflow)
+- User asks to check if an execution is safe
+- User asks to validate execution parameters
 
 Do NOT use when:
 - Actually launching the job (use `governed-job-launcher` skill after this skill)
@@ -39,13 +39,13 @@ Do NOT use when:
 
 ## Workflow
 
-### Step 1: Consult Deployment Governance Documentation
+### Step 1: Consult Execution Governance Documentation
 
 **CRITICAL**: Document consultation MUST happen BEFORE any MCP tool invocations.
 
 **Document Consultation** (REQUIRED - Execute FIRST):
-1. **Action**: Read [deployment-governance.md](../../docs/aap/deployment-governance.md) using the Read tool to understand inventory risk classification, extra_vars safety scanning, and governance controls
-2. **Output to user**: "I consulted [deployment-governance.md](docs/aap/deployment-governance.md) which cites Red Hat's Security Best Practices and Job Templates documentation for deployment governance controls."
+1. **Action**: Read [execution-governance.md](../../docs/aap/execution-governance.md) using the Read tool to understand inventory risk classification, extra_vars safety scanning, and governance controls
+2. **Output to user**: "I consulted [execution-governance.md](docs/aap/execution-governance.md) which cites Red Hat's Security Best Practices and Job Templates documentation for execution governance controls."
 
 ### Step 2: Identify the Job Template
 
@@ -74,7 +74,7 @@ This returns the template's expected extra_vars, defaults, required fields, and 
 **Parameters**:
 - `page_size`: `100`
 
-Identify the target inventory from the job template configuration or user-provided override. Apply the risk classification from deployment-governance.md:
+Identify the target inventory from the job template configuration or user-provided override. Apply the risk classification from execution-governance.md:
 
 | Inventory Name Pattern | Risk Level | Governance Required |
 |---|---|---|
@@ -90,11 +90,11 @@ For unclassifiable inventories, check host count:
 - `search`: `"<inventory_name>"`
 - `page_size`: `1`
 
-**Transparency note**: Per deployment-governance.md, inventory risk classification is this agent's implementation of Red Hat's recommendation to "use separate inventories for production and development environments" (Controller Best Practices).
+**Transparency note**: Per execution-governance.md, inventory risk classification is this agent's implementation of Red Hat's recommendation to "use separate inventories for production and development environments" (Controller Best Practices).
 
-### Step 5: Pre-Deployment Context Analysis (Scenario-Driven)
+### Step 5: Pre-Execution Context Analysis (Scenario-Driven)
 
-Per the "Pre-Deployment Context Analysis" section of deployment-governance.md, examine the template's operational context. These queries adapt the risk assessment to the specific scenario.
+Per the "Pre-Execution Context Analysis" section of execution-governance.md, examine the template's operational context. These queries adapt the risk assessment to the specific scenario.
 
 **5a. Job History** (always check):
 
@@ -106,7 +106,7 @@ Per the "Pre-Deployment Context Analysis" section of deployment-governance.md, e
 
 Examine the most recent 5 runs. Report:
 - If all successful → "Clear history"
-- If most recent failed → **WARN**: "Last run of this template failed. Investigate before redeploying."
+- If most recent failed → **WARN**: "Last run of this template failed. Investigate before re-executing."
 - If 2+ consecutive failures → **ELEVATED**: "Template has failed [N] consecutive times."
 - If 0 runs → **INFO**: "First execution of this template -- extra caution recommended."
 
@@ -124,7 +124,7 @@ From the `job_templates_launch_retrieve` response (Step 3), examine:
 - `id`: `"<template_id>"`
 
 Check notification association fields. If no failure notifications are bound:
-Report: "Per Red Hat's Notifications documentation (Ch. 25), this template has no failure notification. If deployment fails, no one will be automatically alerted."
+Report: "Per Red Hat's Notifications documentation (Ch. 25), this template has no failure notification. If execution fails, no one will be automatically alerted."
 
 **5d. Workflow Coverage** (check for CRITICAL/HIGH risk):
 
@@ -149,7 +149,7 @@ Report specific warning: "This playbook uses shell/command modules ([X] tasks). 
 
 **5f. Adaptive Risk Adjustment**:
 
-Based on collected signals, adjust the base risk level per deployment-governance.md's "Adaptive Risk Enhancement" table:
+Based on collected signals, adjust the base risk level per execution-governance.md's "Adaptive Risk Enhancement" table:
 - HIGH + never run + check mode not overridable → elevate to **CRITICAL**
 - LOW + recent failures → elevate to **MEDIUM**
 - Any risk + no notifications on production target → add advisory flag
@@ -160,18 +160,18 @@ Inspect the extra_vars that would be passed to the job. Check both:
 1. Default extra_vars from the template (from Step 3)
 2. User-provided extra_vars overrides
 
-**Secret detection** (per deployment-governance.md):
+**Secret detection** (per execution-governance.md):
 - Key names containing (case-insensitive): `password`, `secret`, `token`, `api_key`, `apikey`, `private_key`, `ssh_key`, `access_key`, `auth`
 - Values that look like tokens: long alphanumeric strings, base64, prefixes like `sk-`, `ghp_`, `Bearer`
 
-**Transparency note**: Per deployment-governance.md, secret scanning implements Red Hat's recommendation to "Remove user access to credentials" (Ch. 15, Sec. 15.1.4) by detecting plain-text secrets in extra_vars that should be managed via AAP credentials.
+**Transparency note**: Per execution-governance.md, secret scanning implements Red Hat's recommendation to "Remove user access to credentials" (Ch. 15, Sec. 15.1.4) by detecting plain-text secrets in extra_vars that should be managed via AAP credentials.
 
 ### Step 7: Generate Risk Report
 
 **Output format**:
 
 ```
-## Deployment Risk Analysis
+## Execution Risk Analysis
 
 **Job Template**: [name] (ID: [id])
 **Target Inventory**: [name]
@@ -212,7 +212,7 @@ Per Red Hat's *Security Best Practices* (Ch. 15, Sec. 15.1.4): "Remove user acce
 [If risk was elevated: explain why and cite the triggering signals]
 ```
 
-**If secrets are found**: BLOCK the deployment and recommend using AAP credentials instead.
+**If secrets are found**: BLOCK the execution and recommend using AAP credentials instead.
 
 **If CRITICAL/HIGH risk**: Recommend check mode execution before full run.
 
@@ -242,16 +242,16 @@ Per Red Hat's *Security Best Practices* (Ch. 15, Sec. 15.1.4): "Remove user acce
 - `execution-summary` - Audit trail
 
 ### Reference Documentation
-- [deployment-governance.md](../../docs/aap/deployment-governance.md) - Risk classification and safety scanning reference
+- [execution-governance.md](../../docs/aap/execution-governance.md) - Risk classification and safety scanning reference
 
 ## Example Usage
 
-**User**: "Deploy the security patch to production"
+**User**: "Execute the security patch on production"
 
 **Agent**:
-1. Reads deployment-governance.md
-2. Reports: "I consulted deployment-governance.md which cites Red Hat's Security Best Practices and Controller Best Practices."
-3. Finds "Deploy Security Patch" template via `job_templates_list`
+1. Reads execution-governance.md
+2. Reports: "I consulted execution-governance.md which cites Red Hat's Security Best Practices and Controller Best Practices."
+3. Finds "Security Patch" template via `job_templates_list`
 4. Inspects launch parameters via `job_templates_launch_retrieve`
 5. Identifies "Production" inventory → CRITICAL base risk
 6. **Adapts**: Checks job history → last run failed → adds WARN signal

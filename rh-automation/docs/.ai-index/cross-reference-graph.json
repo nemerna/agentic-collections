@@ -8,9 +8,9 @@
       "title": "AAP Governance Readiness Assessment"
     },
     {
-      "id": "deployment-governance",
-      "path": "aap/deployment-governance.md",
-      "title": "Deployment Governance"
+      "id": "execution-governance",
+      "path": "aap/execution-governance.md",
+      "title": "Execution Governance"
     },
     {
       "id": "job-troubleshooting",
@@ -26,15 +26,15 @@
   "edges": [
     {
       "from": "governance-readiness",
-      "to": "deployment-governance",
+      "to": "execution-governance",
       "relationship": "precedes",
-      "description": "After assessing readiness, use deployment governance for governed execution"
+      "description": "After assessing readiness, use execution governance for governed execution"
     },
     {
-      "from": "deployment-governance",
+      "from": "execution-governance",
       "to": "job-troubleshooting",
       "relationship": "follows_on_failure",
-      "description": "If deployment fails, use troubleshooting for forensic analysis"
+      "description": "If execution fails, use troubleshooting for forensic analysis"
     },
     {
       "from": "job-troubleshooting",
@@ -43,10 +43,10 @@
       "description": "Troubleshooting uses error classification for systematic error typing"
     },
     {
-      "from": "deployment-governance",
+      "from": "execution-governance",
       "to": "governance-readiness",
       "relationship": "optional_precondition",
-      "description": "First production deployment may trigger readiness assessment"
+      "description": "First production execution may trigger readiness assessment"
     },
     {
       "from": "error-classification",

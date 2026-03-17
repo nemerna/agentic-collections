@@ -51,9 +51,9 @@ semantic_keywords:
 use_cases:
   - "governance_readiness_assessment"
   - "platform_audit"
-  - "pre_deployment_check"
+  - "pre_execution_check"
 related_docs:
-  - "aap/deployment-governance.md"
+  - "aap/execution-governance.md"
   - "aap/job-troubleshooting.md"
   - "references/error-classification.md"
 last_updated: 2026-02-26
@@ -75,11 +75,11 @@ The assessment covers 7 domains. Each domain maps to specific Red Hat documentat
 - User asks to assess AAP governance readiness
 - User asks "Is my AAP ready for production?"
 - User asks to audit platform configuration
-- Before a first production deployment (part of governance-deployer workflow)
-- User asks "What should I fix before deploying?"
+- Before a first production execution (part of governance-executor workflow)
+- User asks "What should I fix before executing jobs?"
 
 **Do NOT use when**:
-- User wants to deploy a specific job template (use [deployment-governance.md](deployment-governance.md))
+- User wants to execute a specific job template (use [execution-governance.md](execution-governance.md))
 - User wants to troubleshoot a failed job (use [job-troubleshooting.md](job-troubleshooting.md))
 - User only wants to validate MCP connectivity (use aap-mcp-validator skill directly)
 
@@ -600,7 +600,7 @@ Parameters: { "page_size": 100 }
 
 ### Pitfalls
 
-- **Don't flag local auth as a hard failure**: Small deployments or lab environments may legitimately use local authentication. This is a maturity indicator.
+- **Don't flag local auth as a hard failure**: Small environments or labs may legitimately use local authentication. This is a maturity indicator.
 - **Don't expose authenticator configuration details**: The response may contain sensitive LDAP/SAML configuration. Report presence/absence only.
 
 ---
@@ -919,8 +919,8 @@ Domains that can be addressed in parallel: [list independent domains]
 
 ## Cross-References
 
-- **[deployment-governance.md](deployment-governance.md)** -- After assessing readiness, use this document for governed deployment execution with risk classification and check mode
-- **[job-troubleshooting.md](job-troubleshooting.md)** -- If jobs fail during deployment, use this document for forensic troubleshooting with event parsing and host correlation
+- **[execution-governance.md](execution-governance.md)** -- After assessing readiness, use this document for governed execution with risk classification and check mode
+- **[job-troubleshooting.md](job-troubleshooting.md)** -- If jobs fail during execution, use this document for forensic troubleshooting with event parsing and host correlation
 - **[error-classification.md](../references/error-classification.md)** -- Reference for systematic error classification and resolution path determination
 
 ---

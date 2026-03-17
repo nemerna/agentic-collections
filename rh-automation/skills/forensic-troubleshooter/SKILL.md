@@ -4,11 +4,11 @@ description: |
   Orchestrates forensic analysis of failed jobs with event extraction, host correlation, and resolution advisory.
 
   Use when:
-  - "Job #X failed", "Why did the deployment fail?"
+  - "Job #X failed", "Why did the execution fail?"
   - "Analyze the failure", "What went wrong?"
   - "Root cause analysis of job #X"
 
-  NOT for deployment (use governance-deployer) or platform assessment (use governance-assessor).
+  NOT for execution (use governance-executor) or platform assessment (use governance-assessor).
 model: inherit
 color: yellow
 ---
@@ -26,10 +26,10 @@ Use this skill when:
 - User reports a failed job and wants to understand why
 - User asks for root cause analysis of a job failure
 - User asks to analyze job errors or failure events
-- After a governed deployment fails (follow-up from governance-deployer)
+- After a governed execution fails (follow-up from governance-executor)
 
 Do NOT use when:
-- User wants to deploy (use `governance-deployer` skill)
+- User wants to execute a job (use `governance-executor` skill)
 - User wants to assess platform readiness (use `governance-assessor` skill)
 - User wants to check host facts without a failure context (use `host-fact-inspector` skill directly)
 
@@ -98,7 +98,7 @@ The resolution-advisor skill reads [error-classification.md](../../docs/referenc
 - None; delegated to sub-skills (`job-failure-analyzer`, `host-fact-inspector`).
 
 ### Related Skills
-- `governance-deployer` - If failure occurred during a governed deployment
+- `governance-executor` - If failure occurred during a governed execution
 - `governance-assessor` - If root cause points to platform governance gaps
 
 ### Reference Documentation
@@ -128,12 +128,12 @@ The resolution-advisor skill reads [error-classification.md](../../docs/referenc
    - Recommendation: "Define `db_password` via AAP credentials (Ch. 15, Sec. 15.1.4) rather than host vars"
 5. Invokes execution-summary with full forensic audit trail
 
-### Example 2: Post-Deployment Failure Follow-Up
+### Example 2: Post-Execution Failure Follow-Up
 
-**User**: "The deployment just failed, can you investigate?"
+**User**: "The execution just failed, can you investigate?"
 
 **Agent**:
 
 1. Identifies the most recent failed job from `jobs_list`
 2. Follows the same forensic workflow: analyze → correlate → advise
-3. If related to a governed deployment, links back to the deployment risk analysis
+3. If related to a governed execution, links back to the execution risk analysis

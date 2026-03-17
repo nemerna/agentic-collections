@@ -28,7 +28,7 @@ use_cases:
   - "resolution_path_determination"
 related_docs:
   - "aap/job-troubleshooting.md"
-  - "aap/deployment-governance.md"
+  - "aap/execution-governance.md"
 last_updated: 2026-02-26
 ---
 
@@ -49,7 +49,7 @@ Not all job failures are the same. A host connectivity issue requires platform i
 
 **Do NOT use when**:
 - For initial event extraction (use [job-troubleshooting.md](../aap/job-troubleshooting.md) first)
-- For deployment decisions (use [deployment-governance.md](../aap/deployment-governance.md))
+- For execution decisions (use [execution-governance.md](../aap/execution-governance.md))
 
 ---
 
@@ -308,7 +308,7 @@ Errors caused by mismatches between the playbook's expectations and the target s
 ## Cross-References
 
 - **[job-troubleshooting.md](../aap/job-troubleshooting.md)** -- Use first for event extraction and host correlation before classifying errors
-- **[deployment-governance.md](../aap/deployment-governance.md)** -- For rollback options after classification determines the error requires immediate remediation
+- **[execution-governance.md](../aap/execution-governance.md)** -- For rollback options after classification determines the error requires immediate remediation
 - **[governance-readiness.md](../aap/governance-readiness.md)** -- Platform errors may indicate governance gaps (e.g., single instance group causing capacity issues)
 
 ---

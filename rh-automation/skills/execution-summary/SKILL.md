@@ -7,7 +7,7 @@ description: |
   - "Generate execution summary"
   - "Create execution report"
   - "Show workflow audit trail"
-  - After completing any governance workflow (assessment, deployment, troubleshooting)
+  - After completing any governance workflow (assessment, execution, troubleshooting)
 
   NOT for: starting a new workflow (use the appropriate skill instead).
 model: inherit
@@ -24,7 +24,7 @@ color: green
 
 Use this skill when:
 - After completing a governance assessment workflow
-- After completing a governed deployment
+- After completing a governed execution
 - After completing forensic troubleshooting
 - User asks for an execution summary or audit trail
 - As the final step in any agent workflow
@@ -52,7 +52,7 @@ Review the current conversation/session to extract:
 ```
 ## Execution Summary
 
-**Workflow**: [Assessment / Deployment / Troubleshooting]
+**Workflow**: [Assessment / Execution / Troubleshooting]
 **Initiated**: [timestamp]
 **Duration**: [time span]
 **Status**: [Completed / Partially Completed / Aborted]
@@ -64,7 +64,7 @@ Review the current conversation/session to extract:
 | Document | Topic | Citation |
 |---|---|---|
 | [governance-readiness.md](docs/aap/governance-readiness.md) | 7-domain assessment framework | Red Hat AAP 2.5 Security Best Practices (Ch. 15), Workflows (Ch. 9), Notifications (Ch. 25) |
-| [deployment-governance.md](docs/aap/deployment-governance.md) | Risk classification, check mode | Red Hat AAP 2.5 Job Templates (Ch. 9), Controller Best Practices |
+| [execution-governance.md](docs/aap/execution-governance.md) | Risk classification, check mode | Red Hat AAP 2.5 Job Templates (Ch. 9), Controller Best Practices |
 | [job-troubleshooting.md](docs/aap/job-troubleshooting.md) | Event parsing, failure patterns | Red Hat AAP 2.6 Troubleshooting Guide |
 | [error-classification.md](docs/references/error-classification.md) | Error taxonomy | Red Hat AAP 2.6 Troubleshooting Guide |
 
@@ -78,7 +78,7 @@ Review the current conversation/session to extract:
 
 | Decision | Basis | Outcome |
 |---|---|---|
-| [e.g., "Classified Production as CRITICAL risk"] | [e.g., "Per deployment-governance.md: inventory name contains 'prod'"] | [e.g., "Check mode required before execution"] |
+| [e.g., "Classified Production as CRITICAL risk"] | [e.g., "Per execution-governance.md: inventory name contains 'prod'"] | [e.g., "Check mode required before execution"] |
 
 ### Human Interactions
 
@@ -111,6 +111,6 @@ Review the current conversation/session to extract:
 
 ## Example Usage
 
-**User**: "Generate an execution summary for the deployment we just did"
+**User**: "Generate an execution summary for the job we just ran"
 
-**Agent** produces a structured summary showing: deployment-governance.md was consulted (citing Red Hat Ch. 9 and Ch. 15), `job_templates_launch_create` was called twice (check mode + full run), risk was classified as CRITICAL (based on inventory name "Production"), user approved after check mode passed, and the deployment succeeded on 1 host with 3 changes.
+**Agent** produces a structured summary showing: execution-governance.md was consulted (citing Red Hat Ch. 9 and Ch. 15), `job_templates_launch_create` was called twice (check mode + full run), risk was classified as CRITICAL (based on inventory name "Production"), user approved after check mode passed, and the execution succeeded on 1 host with 3 changes.

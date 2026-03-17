@@ -32,10 +32,10 @@ color: blue
 Use this skill when:
 - A skill or agent needs to verify AAP MCP server availability before proceeding
 - User asks to validate or check AAP MCP connectivity
-- As the first step in any governed workflow (assessment, deployment, troubleshooting)
+- As the first step in any governed workflow (assessment, execution, troubleshooting)
 
 Do NOT use when:
-- The actual analysis, deployment, or troubleshooting step (use the specialized skill)
+- The actual analysis, execution, or troubleshooting step (use the specialized skill)
 - Checking non-AAP MCP servers
 
 ## Workflow
@@ -47,7 +47,7 @@ The calling skill or agent specifies which MCP servers it needs. Map common work
 | Workflow | Required Servers |
 |---|---|
 | Governance Assessment | All 6 servers |
-| Deployment | `aap-mcp-job-management`, `aap-mcp-inventory-management` |
+| Execution | `aap-mcp-job-management`, `aap-mcp-inventory-management` |
 | Troubleshooting | `aap-mcp-job-management`, `aap-mcp-inventory-management` |
 | RBAC Check | `aap-mcp-user-management` |
 

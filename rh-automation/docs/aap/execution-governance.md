@@ -1,5 +1,5 @@
 ---
-title: Deployment Governance
+title: Execution Governance
 category: aap
 sources:
   - title: "Red Hat AAP 2.5 - Job Templates"
@@ -22,10 +22,10 @@ sources:
     url: https://docs.redhat.com/en/documentation/red_hat_ansible_automation_platform/2.5/html/configuring_automation_execution/controller-best-practices
     sections: "Inventory management, environment separation"
     date_accessed: 2026-02-20
-tags: [deployment, governance, check-mode, risk-classification, rollback, phased-rollout, extra-vars, secret-scanning]
+tags: [execution, governance, check-mode, risk-classification, rollback, phased-rollout, extra-vars, secret-scanning]
 applies_to: [aap2.5, aap2.6]
 semantic_keywords:
-  - "deploy to production"
+  - "execute on production"
   - "check mode dry run"
   - "inventory risk classification"
   - "secret scanning extra_vars"
@@ -33,10 +33,10 @@ semantic_keywords:
   - "phased rollout"
   - "job template launch"
   - "diff mode"
-  - "deployment safety"
+  - "execution safety"
   - "production governance"
 use_cases:
-  - "governed_deployment"
+  - "governed_execution"
   - "risk_analysis"
   - "check_mode_execution"
   - "rollback"
@@ -47,21 +47,21 @@ related_docs:
 last_updated: 2026-02-26
 ---
 
-# Deployment Governance
+# Execution Governance
 
-This document teaches the agent how to execute governed deployments on Ansible Automation Platform. It covers inventory risk classification, pre-launch safety checks, check mode execution and interpretation, rollback patterns, and phased rollout strategies. Every governance control is rooted in Red Hat's official documentation.
+This document teaches the agent how to execute governed jobs on Ansible Automation Platform. It covers inventory risk classification, pre-launch safety checks, check mode execution and interpretation, rollback patterns, and phased rollout strategies. Every governance control is rooted in Red Hat's official documentation.
 
 ## Overview
 
-A governed deployment follows a principle: **the higher the risk, the more governance controls apply**. Risk is determined by the target inventory, the scope of change, and the content of extra_vars. Governance controls range from simple confirmation (low risk) to mandatory check mode, approval gates, and phased rollout (critical risk).
+A governed execution follows a principle: **the higher the risk, the more governance controls apply**. Risk is determined by the target inventory, the scope of change, and the content of extra_vars. Governance controls range from simple confirmation (low risk) to mandatory check mode, approval gates, and phased rollout (critical risk).
 
 ## When to Use This Document
 
 **Use when**:
-- User asks to deploy, launch, or execute a job template
+- User asks to execute, launch, or run a job template
 - User asks to push to production
 - User asks about check mode or dry runs
-- User asks about rollback after a failed deployment
+- User asks about rollback after a failed execution
 
 **Do NOT use when**:
 - User asks to assess platform governance readiness (use [governance-readiness.md](governance-readiness.md))
@@ -162,7 +162,7 @@ This returns the template's expected extra_vars, defaults, and required fields.
 
 ---
 
-## Pre-Deployment Context Analysis
+## Pre-Execution Context Analysis
 
 Beyond static risk classification (inventory name, extra_vars), the agent SHOULD examine the job template's operational context -- its history, configuration, and governance bindings. These signals adapt the risk assessment to the specific scenario rather than relying solely on inventory name patterns.
 
@@ -189,7 +189,7 @@ Parameters: { "page_size": 5, "job_template": "<template_id>", "order_by": "-fin
 | Recent Jobs | Last Runs Status | Signal | Agent Action |
 |---|---|---|---|
 | > 0 | All successful | **CLEAR** | Proceed normally |
-| > 0 | Most recent failed | **WARN** | "This template's last run failed. Investigate before redeploying." |
+| > 0 | Most recent failed | **WARN** | "This template's last run failed. Investigate before re-executing." |
 | > 0 | 2+ consecutive failures | **ELEVATED** | "This template has failed [N] consecutive times. Strongly recommend investigating root cause before retrying." |
 | 0 | N/A (never run) | **INFO** | "This template has never been executed. First run -- extra caution recommended." |
 
@@ -232,7 +232,7 @@ Parameters: { "id": "<template_id>" }
 
 If the template shows no notification associations for error events:
 
-**Agent Action**: "Per Red Hat's Notifications documentation (Ch. 25), this job template has no failure notification configured. If this deployment fails, no one will be automatically alerted. Consider adding failure notifications before production use."
+**Agent Action**: "Per Red Hat's Notifications documentation (Ch. 25), this job template has no failure notification configured. If this execution fails, no one will be automatically alerted. Consider adding failure notifications before production use."
 
 ### Signal 4: Workflow Coverage
 
@@ -246,7 +246,7 @@ Parameters: { "page_size": 100 }
 
 If no workflows exist, or none reference this job template:
 
-**Agent Action**: "Per Red Hat's Workflow documentation (Ch. 9), this job template runs standalone -- not wrapped in a workflow. Workflows provide approval nodes, failure paths, and conditional logic. For production deployments, consider wrapping this template in a workflow."
+**Agent Action**: "Per Red Hat's Workflow documentation (Ch. 9), this job template runs standalone -- not wrapped in a workflow. Workflows provide approval nodes, failure paths, and conditional logic. For production executions, consider wrapping this template in a workflow."
 
 ### Signal 5: Previous Run Module Analysis
 
@@ -274,7 +274,7 @@ After collecting all signals, the agent adjusts the base risk assessment:
 | LOW | Recent failures | **MEDIUM** (elevated) | Dev environment but template is failing -- extra caution |
 | Any | No notifications + production target | Risk + **advisory** | Flag missing notifications as a governance gap |
 
-**Transparency note**: Risk elevation based on operational signals is the agent's proactive contribution. Red Hat's documentation establishes the governance principles; the agent applies them dynamically based on what it discovers about the specific deployment scenario.
+**Transparency note**: Risk elevation based on operational signals is the agent's proactive contribution. Red Hat's documentation establishes the governance principles; the agent applies them dynamically based on what it discovers about the specific execution scenario.
 
 ---
 
@@ -351,7 +351,7 @@ Parameters: { "id": "<check_mode_job_id>" }
 ### Pitfalls
 
 - **Don't trust check mode blindly**: Shell/command tasks are skipped. If the playbook relies heavily on shell commands, check mode provides incomplete coverage. Warn the user.
-- **Don't skip check mode for CRITICAL risk**: Even if the user says "urgent," CRITICAL-risk deployments should always get a check mode pass per governance policy.
+- **Don't skip check mode for CRITICAL risk**: Even if the user says "urgent," CRITICAL-risk executions should always get a check mode pass per governance policy.
 - **Don't forget diff_mode**: Always set `diff_mode: true` when running check mode. Without it, you see pass/fail but not *what* would change.
 
 ---
@@ -452,7 +452,7 @@ Parameters: {
 
 ### Phased Rollout Pattern
 
-For CRITICAL-risk deployments targeting many hosts, roll out in phases:
+For CRITICAL-risk executions targeting many hosts, roll out in phases:
 
 **Phase 1**: Canary -- single host or small group
 
@@ -505,14 +505,14 @@ If `failures > 0` on any host, **STOP the rollout** and report. Do not proceed t
 
 ### Pitfalls
 
-- **Don't skip the canary**: Even if the user says "deploy to all," CRITICAL-risk deployments should validate on a canary first.
+- **Don't skip the canary**: Even if the user says "execute on all," CRITICAL-risk executions should validate on a canary first.
 - **Don't use limit patterns without verifying**: The Ansible `limit` syntax supports patterns (`host1,host2`, `group[0:5]`, `~regex`). Verify the pattern resolves to expected hosts before launching.
 
 ---
 
 ## Governance Workflow Summary
 
-The complete governed deployment workflow:
+The complete governed execution workflow:
 
 ```
 1. IDENTIFY the job template and target inventory
@@ -535,9 +535,9 @@ The complete governed deployment workflow:
 
 ## Cross-References
 
-- **[governance-readiness.md](governance-readiness.md)** -- Assess platform readiness before first production deployment
-- **[job-troubleshooting.md](job-troubleshooting.md)** -- If deployment fails, use forensic troubleshooting to determine root cause
-- **[error-classification.md](../references/error-classification.md)** -- Classify deployment errors and determine resolution paths
+- **[governance-readiness.md](governance-readiness.md)** -- Assess platform readiness before first production execution
+- **[job-troubleshooting.md](job-troubleshooting.md)** -- If execution fails, use forensic troubleshooting to determine root cause
+- **[error-classification.md](../references/error-classification.md)** -- Classify execution errors and determine resolution paths
 
 ---
 
@@ -559,8 +559,8 @@ The complete governed deployment workflow:
 
 | Governance Control | When Applied | MCP Tool | Key Parameter |
 |---|---|---|---|
-| Risk Classification | All deployments | `inventories_list` | Inventory name + host count |
-| Secret Scanning | All deployments | `job_templates_launch_retrieve` | extra_vars inspection |
+| Risk Classification | All executions | `inventories_list` | Inventory name + host count |
+| Secret Scanning | All executions | `job_templates_launch_retrieve` | extra_vars inspection |
 | Check Mode | CRITICAL + HIGH risk | `job_templates_launch_create` | `job_type: "check"`, `diff_mode: true` |
 | Approval Gate | CRITICAL + HIGH risk | N/A (human-in-the-loop) | User confirmation |
 | Phased Rollout | CRITICAL risk | `job_templates_launch_create` | `limit` parameter per phase |

@@ -34,7 +34,7 @@ Use this skill when:
 Do NOT use when:
 - Analyzing job events (use `job-failure-analyzer` first)
 - Getting resolution recommendations (use `resolution-advisor` after this skill)
-- Deploying to hosts (use `deployment-risk-analyzer` + `governed-job-launcher`)
+- Executing jobs on hosts (use `execution-risk-analyzer` + `governed-job-launcher`)
 
 ## Workflow
 

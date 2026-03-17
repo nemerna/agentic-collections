@@ -1,7 +1,7 @@
 {
   "name": "rh-automation",
   "version": "1.0.0",
-  "description": "Ansible Automation Platform governance, deployment safety, and forensic troubleshooting tools for Red Hat automation engineers.",
+  "description": "Ansible Automation Platform governance, execution safety, and forensic troubleshooting tools for Red Hat automation engineers.",
   "author": {
     "name": "Red Hat Ecosystem Engineering",
     "email": "eco-engineering@redhat.com"
@@ -14,6 +14,6 @@
     "red-hat",
     "governance",
     "troubleshooting",
-    "deployment"
+    "execution"
   ]
 }

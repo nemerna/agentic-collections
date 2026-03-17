@@ -15,7 +15,7 @@ All documentation in this collection is derived from or references official Red 
 - Sec. 15.2.1: Use teams for role-based access
 - Sec. 15.2.2: External authentication (LDAP, SAML, OAuth)
 
-**Referenced By**: governance-readiness.md (Domains 3, 4, Bonus), deployment-governance.md (secret scanning)
+**Referenced By**: governance-readiness.md (Domains 3, 4, Bonus), execution-governance.md (secret scanning)
 
 **Date Accessed**: 2026-02-20
 
@@ -30,7 +30,7 @@ All documentation in this collection is derived from or references official Red 
 - Sec. 9.4: Workflow RBAC
 - Approval nodes
 
-**Referenced By**: governance-readiness.md (Domain 1), deployment-governance.md
+**Referenced By**: governance-readiness.md (Domain 1), execution-governance.md
 
 **Date Accessed**: 2026-02-20
 
@@ -151,7 +151,7 @@ All documentation in this collection is derived from or references official Red 
 - Job slicing
 - Relaunch
 
-**Referenced By**: deployment-governance.md, job-troubleshooting.md
+**Referenced By**: execution-governance.md, job-troubleshooting.md
 
 **Date Accessed**: 2026-02-20
 
@@ -165,7 +165,7 @@ All documentation in this collection is derived from or references official Red 
 - Inventory management
 - Environment separation
 
-**Referenced By**: deployment-governance.md (risk classification)
+**Referenced By**: execution-governance.md (risk classification)
 
 **Date Accessed**: 2026-02-20
 
@@ -180,7 +180,7 @@ All documentation in this collection is derived from or references official Red 
 - diff mode
 - Limitations (shell/command modules)
 
-**Referenced By**: deployment-governance.md (check mode section)
+**Referenced By**: execution-governance.md (check mode section)
 
 **Date Accessed**: 2026-02-20
 

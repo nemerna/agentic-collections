@@ -31,7 +31,7 @@ use_cases:
   - "forensic_troubleshooting"
   - "host_correlation"
 related_docs:
-  - "aap/deployment-governance.md"
+  - "aap/execution-governance.md"
   - "aap/governance-readiness.md"
   - "references/error-classification.md"
 last_updated: 2026-02-26
@@ -49,12 +49,12 @@ When an AAP job fails, the raw information exists in three places: **job events*
 
 **Use when**:
 - User reports a failed job: "Job #X failed"
-- User asks why a deployment failed
+- User asks why an execution failed
 - User asks to analyze job errors
 - As part of the forensic-troubleshooter agent workflow
 
 **Do NOT use when**:
-- User wants to deploy (use [deployment-governance.md](deployment-governance.md))
+- User wants to execute a job (use [execution-governance.md](execution-governance.md))
 - User wants to assess platform readiness (use [governance-readiness.md](governance-readiness.md))
 - User needs error classification taxonomy (use [error-classification.md](../references/error-classification.md) as companion reference)
 
@@ -367,7 +367,7 @@ See [error-classification.md](../references/error-classification.md) for detaile
 
 ## Cross-References
 
-- **[deployment-governance.md](deployment-governance.md)** -- For rollback options after determining root cause
+- **[execution-governance.md](execution-governance.md)** -- For rollback options after determining root cause
 - **[governance-readiness.md](governance-readiness.md)** -- Platform configuration issues may indicate governance gaps
 - **[error-classification.md](../references/error-classification.md)** -- Detailed error taxonomy and resolution path mapping
 

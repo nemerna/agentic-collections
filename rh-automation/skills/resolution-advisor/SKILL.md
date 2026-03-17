@@ -31,7 +31,7 @@ Use this skill when:
 Do NOT use when:
 - Job events haven't been analyzed yet (run `job-failure-analyzer` first)
 - Host facts haven't been checked (run `host-fact-inspector` first if hosts are involved)
-- User wants to deploy (use governance-deployer agent)
+- User wants to execute a job (use governance-executor skill)
 
 ## Workflow
 

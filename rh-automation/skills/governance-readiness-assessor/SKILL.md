@@ -6,11 +6,11 @@ description: |
   Use when:
   - Full assessment: "Is my AAP ready for production?", "Audit my platform governance"
   - Scoped assessment: "Assess my credentials setup", "Check my RBAC", "How are my notifications configured?"
-  - "What should I fix before deploying?"
+  - "What should I fix before executing jobs?"
   - "Assess my AAP configuration"
   - Any question about a specific governance domain (credentials, RBAC, workflows, notifications, EEs, instance groups, audit, auth)
 
-  NOT for: deploying jobs (use governance-deployer) or troubleshooting failures (use forensic-troubleshooter).
+  NOT for: executing jobs (use governance-executor) or troubleshooting failures (use forensic-troubleshooter).
 model: inherit
 color: red
 ---
@@ -43,11 +43,11 @@ Use this skill when:
   - "Is my audit trail working?" → Domain 7 (Audit Trail)
   - "Check my authentication setup" → Bonus (External Authentication)
   - Combinations: "Assess my credentials and RBAC" → Domains 3 + 4
-- Before a first production deployment (as part of governance-assessor workflow)
+- Before a first production execution (as part of governance-assessor workflow)
 - User asks what needs to be fixed in their AAP configuration
 
 Do NOT use when:
-- User wants to deploy a specific job (use `deployment-risk-analyzer` + `governed-job-launcher` skills)
+- User wants to execute a specific job (use `execution-risk-analyzer` + `governed-job-launcher` skills)
 - User wants to troubleshoot a failed job (use `job-failure-analyzer` skill)
 - User only wants MCP connectivity validation (use `aap-mcp-validator` skill)
 

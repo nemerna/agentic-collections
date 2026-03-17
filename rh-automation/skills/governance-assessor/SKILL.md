@@ -16,10 +16,10 @@ description: |
   Use when:
   - Full: "Is my AAP ready for production?", "Audit my platform governance"
   - Scoped: "Assess my credentials setup", "Check my RBAC", "How are my notifications?"
-  - "What should I fix before deploying?"
+  - "What should I fix before executing jobs?"
   - Any question about specific AAP governance domains listed above
 
-  NOT for deployment (use governance-deployer) or troubleshooting (use forensic-troubleshooter).
+  NOT for job execution (use governance-executor) or troubleshooting (use forensic-troubleshooter).
 model: inherit
 color: red
 ---
@@ -36,12 +36,12 @@ color: red
 Use this skill when:
 - User asks to assess or audit their AAP platform's governance readiness (full assessment)
 - User asks about a specific governance area: credentials, RBAC, workflows, notifications, execution environments, instance groups, audit trail, or authentication (scoped assessment)
-- User asks if their AAP is ready for production deployments
+- User asks if their AAP is ready for production execution
 - User asks what needs to be improved in their AAP setup
-- Before a first production deployment (optional pre-flight check)
+- Before a first production execution (optional pre-flight check)
 
 Do NOT use when:
-- User wants to deploy a job (use `governance-deployer` skill)
+- User wants to execute a job (use `governance-executor` skill)
 - User wants to troubleshoot a failed job (use `forensic-troubleshooter` skill)
 - User only wants MCP connectivity check (use `aap-mcp-validator` skill directly)
 
@@ -102,7 +102,7 @@ Before creating or modifying any AAP resource:
 - None; delegated to sub-skill (`governance-readiness-assessor`).
 
 ### Related Skills
-- `governance-deployer` - Follow-up: governed deployment after assessment passes
+- `governance-executor` - Follow-up: governed execution after assessment passes
 - `forensic-troubleshooter` - Follow-up: investigate failures found during assessment
 
 ### Reference Documentation

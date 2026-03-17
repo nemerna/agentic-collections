@@ -1,11 +1,11 @@
 ---
-name: governance-deployer
+name: governance-executor
 description: |
-  Orchestrates governed deployments with risk analysis, check mode, approval, and rollback.
+  Orchestrates governed job execution with risk analysis, check mode, approval, and rollback.
 
   Use when:
-  - "Deploy X to production", "Push to prod", "Launch job template"
-  - Any deployment request targeting sensitive environments
+  - "Execute job template X", "Deploy to production", "Push to prod", "Launch job template"
+  - Any execution request targeting sensitive environments
   - Job template launches requiring governance controls
 
   NOT for platform assessment (use governance-assessor) or troubleshooting (use forensic-troubleshooter).
@@ -13,24 +13,24 @@ model: inherit
 color: red
 ---
 
-# Governance Deployer
+# Governance Executor
 
 ## Prerequisites
 
 **Required MCP Servers**: `aap-mcp-job-management`, `aap-mcp-inventory-management`
-**Required Skills**: `aap-mcp-validator`, `deployment-risk-analyzer`, `governed-job-launcher`, `execution-summary`
+**Required Skills**: `aap-mcp-validator`, `execution-risk-analyzer`, `governed-job-launcher`, `execution-summary`
 
 ## When to Use This Skill
 
 Use this skill when:
-- User asks to deploy, launch, push, or execute a job template
-- User mentions production, staging, or any environment-targeted deployment
+- User asks to execute, launch, deploy, or push a job template
+- User mentions production, staging, or any environment-targeted execution
 - User asks to launch a specific job template by name or ID
 
 Do NOT use when:
 - User asks to assess platform readiness (use `governance-assessor` skill)
 - User asks to troubleshoot a failed job (use `forensic-troubleshooter` skill)
-- User asks about governance or compliance without a deployment context
+- User asks about governance or compliance without an execution context
 
 ## Workflow
 
@@ -40,10 +40,10 @@ Do NOT use when:
 - Validate `aap-mcp-job-management` and `aap-mcp-inventory-management`
 - If any server fails: report and stop
 
-### 2. Analyze Deployment Risk
+### 2. Analyze Execution Risk
 
-**Invoke the deployment-risk-analyzer skill**:
-- The skill reads deployment-governance.md
+**Invoke the execution-risk-analyzer skill**:
+- The skill reads execution-governance.md
 - Identifies the job template and classifies inventory risk (CRITICAL / HIGH / MEDIUM / LOW)
 - **Adapts**: Checks job history -- flags recent failures or first-time execution
 - **Adapts**: Checks template launch config -- verifies check mode and limit overrides are available
@@ -55,14 +55,14 @@ Do NOT use when:
 - Reports risk assessment with Red Hat citations AND operational context
 
 **Document Consultation** (performed by the skill):
-The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/aap/deployment-governance.md) and reports its consultation.
+The execution-risk-analyzer skill reads [execution-governance.md](../../docs/aap/execution-governance.md) and reports its consultation.
 
 **If secrets detected**: STOP. Report the finding and recommend using AAP credentials.
 
 ### 3. Execute Governed Launch
 
 **Invoke the governed-job-launcher skill**:
-- The skill reads deployment-governance.md
+- The skill reads execution-governance.md
 - **Adapts to risk analyzer signals**:
   - If recent failures flagged → offers to investigate first via forensic-troubleshooter
   - If check mode not overridable → informs user and adapts execution path
@@ -85,13 +85,13 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/a
 ### 4. Generate Execution Summary
 
 **Invoke the execution-summary skill**:
-- Generate audit trail showing: risk classification basis, check mode results, approval decisions, deployment outcome
+- Generate audit trail showing: risk classification basis, check mode results, approval decisions, execution outcome
 
 ## Dependencies
 
 ### Required Skills
 - `aap-mcp-validator` - MCP server validation
-- `deployment-risk-analyzer` - Risk classification and secret scanning
+- `execution-risk-analyzer` - Risk classification and secret scanning
 - `governed-job-launcher` - Check mode, execution, rollback
 - `execution-summary` - Audit trail
 
@@ -100,25 +100,25 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/a
 - `aap-mcp-inventory-management` - Inventory risk classification
 
 ### Required MCP Tools
-- None; delegated to sub-skills (`deployment-risk-analyzer`, `governed-job-launcher`).
+- None; delegated to sub-skills (`execution-risk-analyzer`, `governed-job-launcher`).
 
 ### Related Skills
-- `forensic-troubleshooter` - Follow-up if deployment fails
-- `governance-assessor` - Pre-deployment platform readiness check
+- `forensic-troubleshooter` - Follow-up if execution fails
+- `governance-assessor` - Pre-execution platform readiness check
 
 ### Reference Documentation
-- [deployment-governance.md](../../docs/aap/deployment-governance.md) - Risk classification, check mode, rollback
+- [execution-governance.md](../../docs/aap/execution-governance.md) - Risk classification, check mode, rollback
 
 ## Example Usage
 
-### Example 1: Production Deployment with Full Governance
+### Example 1: Production Execution with Full Governance
 
-**User**: "Deploy the security patch to production"
+**User**: "Execute the security patch on production"
 
 **Agent**:
 
 1. Validates MCP connectivity via aap-mcp-validator
-2. Invokes deployment-risk-analyzer:
+2. Invokes execution-risk-analyzer:
    - Finds "Security Patch" template, identifies "Production" inventory → CRITICAL risk
    - Check mode is overridable, but last run failed → adds WARN signal
    - No failure notifications → flags governance gap
@@ -130,15 +130,15 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/a
    - Phase 1 succeeds → "Proceed to Phase 2?"
 5. Invokes execution-summary with full audit trail
 
-### Example 2: Low-Risk Development Deployment
+### Example 2: Low-Risk Development Execution
 
 **User**: "Launch the dev-setup template"
 
 **Agent**:
 
 1. Validates MCP connectivity
-2. Invokes deployment-risk-analyzer: "Development" inventory → LOW risk, clear job history
-3. Reports: "Low risk deployment, direct execution permitted."
+2. Invokes execution-risk-analyzer: "Development" inventory → LOW risk, clear job history
+3. Reports: "Low risk execution, direct execution permitted."
 4. Invokes governed-job-launcher: executes directly, reports results
 5. Invokes execution-summary
 
