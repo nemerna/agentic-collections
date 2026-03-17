@@ -88,6 +88,13 @@ Before creating or modifying any AAP resource:
 ### Required MCP Servers
 - All 6 AAP MCP servers
 
+### Required MCP Tools
+- None; delegated to sub-skill (`governance-readiness-assessor`).
+
+### Related Skills
+- `governance-deployer` - Follow-up: governed deployment after assessment passes
+- `forensic-troubleshooter` - Follow-up: investigate failures found during assessment
+
 ### Reference Documentation
 - [governance-readiness.md](../../docs/aap/governance-readiness.md) - 7-domain assessment framework
 

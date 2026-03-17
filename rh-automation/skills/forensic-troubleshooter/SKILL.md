@@ -94,6 +94,13 @@ The resolution-advisor skill reads [error-classification.md](../../docs/referenc
 - `aap-mcp-job-management` - Job events and host summaries
 - `aap-mcp-inventory-management` - Host facts for correlation
 
+### Required MCP Tools
+- None; delegated to sub-skills (`job-failure-analyzer`, `host-fact-inspector`).
+
+### Related Skills
+- `governance-deployer` - If failure occurred during a governed deployment
+- `governance-assessor` - If root cause points to platform governance gaps
+
 ### Reference Documentation
 - [job-troubleshooting.md](../../docs/aap/job-troubleshooting.md) - Event parsing, failure patterns, correlation
 - [error-classification.md](../../docs/references/error-classification.md) - Error taxonomy and resolution paths

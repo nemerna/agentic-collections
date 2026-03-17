@@ -99,6 +99,13 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/a
 - `aap-mcp-job-management` - Job template lookup and launch
 - `aap-mcp-inventory-management` - Inventory risk classification
 
+### Required MCP Tools
+- None; delegated to sub-skills (`deployment-risk-analyzer`, `governed-job-launcher`).
+
+### Related Skills
+- `forensic-troubleshooter` - Follow-up if deployment fails
+- `governance-assessor` - Pre-deployment platform readiness check
+
 ### Reference Documentation
 - [deployment-governance.md](../../docs/aap/deployment-governance.md) - Risk classification, check mode, rollback
 
