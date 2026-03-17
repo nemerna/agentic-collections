@@ -69,7 +69,20 @@ color: blue
 
 ## Workflow
 
-### Step 1: Gather Monitoring Requirements
+### Step 1: Verify TrustyAI Operator Installation
+
+**MCP Tool**: `resources_list` (from openshift)
+
+**Parameters**:
+- `apiVersion`: `"apiextensions.k8s.io/v1"` - REQUIRED
+- `kind`: `"CustomResourceDefinition"` - REQUIRED
+
+Check for the presence of `trustyaiservices.trustyai.opendatahub.io` CRD. This is a hard prerequisite — nothing in this skill works without it.
+
+**Error Handling**:
+- If CRD not found: Report that TrustyAI must be enabled in the DataScienceCluster CR with `spec.components.trustyai.managementState: Managed`. Offer options: (1) Show enablement instructions, (2) Abort. **WAIT for user decision.**
+
+### Step 2: Gather Monitoring Requirements
 
 **Ask the user for:**
 - **Target model**: Which InferenceService to monitor (name or "list all")
@@ -87,19 +100,6 @@ If user is unsure about target model, use `list_inference_services` (from rhoai)
 - `verbosity`: `"standard"` - OPTIONAL
 
 Present configuration summary for confirmation. **WAIT for user to confirm or modify.**
-
-### Step 2: Verify TrustyAI Operator Installation
-
-**MCP Tool**: `resources_list` (from openshift)
-
-**Parameters**:
-- `apiVersion`: `"apiextensions.k8s.io/v1"` - REQUIRED
-- `kind`: `"CustomResourceDefinition"` - REQUIRED
-
-Check for the presence of `trustyaiservices.trustyai.opendatahub.io` CRD.
-
-**Error Handling**:
-- If CRD not found: Report that TrustyAI must be enabled in the DataScienceCluster CR with `spec.components.trustyai.managementState: Managed`. Offer options: (1) Show enablement instructions, (2) Abort. **WAIT for user decision.**
 
 ### Step 3: Check/Create TrustyAIService in Namespace
 
@@ -253,10 +253,10 @@ See [Prerequisites](#prerequisites) for the complete list of required and option
 See [skill-conventions.md](../references/skill-conventions.md) for general HITL and security conventions.
 
 **Skill-specific checkpoints:**
-- After gathering requirements (Step 1): confirm monitoring configuration
+- After gathering requirements (Step 2): confirm monitoring configuration
 - Before creating TrustyAIService (Step 3): display manifest, confirm creation
+- On TrustyAI pod failure (Step 4): present diagnostic options, wait for user decision
 - Before configuring bias metrics (Step 5): confirm metric parameters and thresholds
 - Before configuring drift metrics (Step 6): confirm metric parameters and thresholds
-- On TrustyAI pod failure (Step 4): present diagnostic options, wait for user decision
 - **NEVER** auto-delete TrustyAIService or metric configurations
 - **NEVER** modify fairness thresholds without explicit user confirmation

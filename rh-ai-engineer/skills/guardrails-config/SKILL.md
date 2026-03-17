@@ -75,7 +75,20 @@ color: blue
 
 ## Workflow
 
-### Step 1: Gather Guardrails Requirements
+### Step 1: Verify GuardrailsOrchestrator CRD
+
+**MCP Tool**: `resources_list` (from openshift)
+
+**Parameters**:
+- `apiVersion`: `"apiextensions.k8s.io/v1"` - REQUIRED
+- `kind`: `"CustomResourceDefinition"` - REQUIRED
+
+Check for `guardrailsorchestrators.trustyai.opendatahub.io` CRD. This is a hard prerequisite — nothing in this skill works without it.
+
+**Error Handling**:
+- If CRD not found: Report that GuardrailsOrchestrator requires RHOAI 2.14+ with TrustyAI enabled (`spec.components.trustyai.managementState: Managed`). Offer options: (1) Show enablement instructions, (2) Abort. **WAIT for user decision.**
+
+### Step 2: Gather Guardrails Requirements
 
 **Ask the user for:**
 - **Target model**: Which InferenceService to guard (name or "list all")
@@ -110,19 +123,6 @@ Verify the selected InferenceService is Ready:
 - `namespace`: target namespace - REQUIRED
 
 Store the endpoint URL for orchestrator routing. Present configuration summary for confirmation. **WAIT for user to confirm or modify.**
-
-### Step 2: Verify GuardrailsOrchestrator CRD
-
-**MCP Tool**: `resources_list` (from openshift)
-
-**Parameters**:
-- `apiVersion`: `"apiextensions.k8s.io/v1"` - REQUIRED
-- `kind`: `"CustomResourceDefinition"` - REQUIRED
-
-Check for `guardrailsorchestrators.trustyai.opendatahub.io` CRD.
-
-**Error Handling**:
-- If CRD not found: Report that GuardrailsOrchestrator requires RHOAI 2.14+ with TrustyAI enabled (`spec.components.trustyai.managementState: Managed`). Offer options: (1) Show enablement instructions, (2) Abort. **WAIT for user decision.**
 
 ### Step 3: Configure Detectors
 
@@ -294,8 +294,8 @@ See [Prerequisites](#prerequisites) for the complete list of required and option
 See [skill-conventions.md](../references/skill-conventions.md) for general HITL and security conventions.
 
 **Skill-specific checkpoints:**
-- After gathering requirements (Step 1): confirm guardrails configuration
-- After target model validation (Step 1): confirm if model is not Ready (proceed/debug/abort)
+- After gathering requirements (Step 2): confirm guardrails configuration
+- After target model validation (Step 2): confirm if model is not Ready (proceed/debug/abort)
 - Before deploying detector models (Step 3a): confirm additional InferenceService creation and resource cost
 - Before creating detector ConfigMap (Step 4): display full configuration, confirm
 - Before deploying GuardrailsOrchestrator (Step 5): display manifest, confirm
