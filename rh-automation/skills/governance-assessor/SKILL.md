@@ -3,11 +3,21 @@ name: governance-assessor
 description: |
   Orchestrates AAP governance readiness assessments -- full platform audit or scoped to specific domains.
 
+  Assesses 7 governance domains + 1 bonus:
+  1. Workflow Governance (approval gates, workflow coverage)
+  2. Notification Coverage (failure alerting, notification bindings)
+  3. Access Control / RBAC (teams, roles, least privilege)
+  4. Credential Security (separation of duties, credential hygiene)
+  5. Execution Environments (custom EEs, image provenance)
+  6. Workload Isolation (instance groups, capacity separation)
+  7. Audit Trail (activity stream, change tracking)
+  Bonus: External Authentication (LDAP, SAML, SSO)
+
   Use when:
   - Full: "Is my AAP ready for production?", "Audit my platform governance"
   - Scoped: "Assess my credentials setup", "Check my RBAC", "How are my notifications?"
   - "What should I fix before deploying?"
-  - Any question about specific AAP governance domains (credentials, RBAC, workflows, notifications, EEs, instance groups, audit, auth)
+  - Any question about specific AAP governance domains listed above
 
   NOT for deployment (use governance-deployer) or troubleshooting (use forensic-troubleshooter).
 model: inherit
