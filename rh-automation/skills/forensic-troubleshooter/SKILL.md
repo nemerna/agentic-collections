@@ -97,3 +97,36 @@ The resolution-advisor skill reads [error-classification.md](../../docs/referenc
 ### Reference Documentation
 - [job-troubleshooting.md](../../docs/aap/job-troubleshooting.md) - Event parsing, failure patterns, correlation
 - [error-classification.md](../../docs/references/error-classification.md) - Error taxonomy and resolution paths
+
+## Example Usage
+
+### Example 1: Single Job Failure
+
+**User**: "Job #4451 failed. What happened?"
+
+**Agent**:
+
+1. Validates MCP connectivity via aap-mcp-validator
+2. Invokes job-failure-analyzer:
+   - Retrieves job #4451 status: "failed"
+   - Extracts failure events: `runner_on_failed` on 2 hosts
+   - Classifies: Configuration error (missing variable `db_password`)
+   - Reconstructs timeline with Red Hat citations
+3. Invokes host-fact-inspector:
+   - Looks up affected hosts: `web-prod-01`, `web-prod-02`
+   - Retrieves host facts: both running RHEL 9.2, same Ansible connection settings
+   - Correlates: variable `db_password` not defined in host vars or group vars
+4. Invokes resolution-advisor:
+   - Classification: Configuration error → variable resolution
+   - Recommendation: "Define `db_password` via AAP credentials (Ch. 15, Sec. 15.1.4) rather than host vars"
+5. Invokes execution-summary with full forensic audit trail
+
+### Example 2: Post-Deployment Failure Follow-Up
+
+**User**: "The deployment just failed, can you investigate?"
+
+**Agent**:
+
+1. Identifies the most recent failed job from `jobs_list`
+2. Follows the same forensic workflow: analyze → correlate → advise
+3. If related to a governed deployment, links back to the deployment risk analysis

@@ -91,6 +91,41 @@ Before creating or modifying any AAP resource:
 ### Reference Documentation
 - [governance-readiness.md](../../docs/aap/governance-readiness.md) - 7-domain assessment framework
 
+## Example Usage
+
+### Example 1: Full Platform Assessment
+
+**User**: "Is my AAP ready for production?"
+
+**Agent**:
+
+1. Validates all 6 MCP servers via aap-mcp-validator
+2. Invokes governance-readiness-assessor (full scope: all 7+1 domains)
+   - Domain 1 (Workflows): GAP -- no workflow job templates found
+   - Domain 2 (Notifications): WARN -- templates exist but not bound to jobs
+   - Domain 3 (RBAC): GAP -- no teams, only user-level assignments
+   - Domain 4 (Credentials): PASS
+   - Domain 5 (EEs): PASS
+   - Domain 6 (Workload Isolation): PASS -- single instance group but lab scale
+   - Domain 7 (Audit Trail): PASS
+   - Bonus (Auth): WARN -- local-only authentication
+   - Compound: No workflows + no notifications = highest-risk combination
+3. Presents full report with Red Hat citations per domain
+4. Offers remediation: "Create a team for automation operators? (Fixes Domain 3)"
+5. Invokes execution-summary with audit trail
+
+### Example 2: Scoped Assessment
+
+**User**: "Check my RBAC and credentials setup"
+
+**Agent**:
+
+1. Validates `aap-mcp-user-management` and `aap-mcp-security-compliance`
+2. Invokes governance-readiness-assessor scoped to Domains 3 + 4
+3. Presents scoped report: RBAC findings + Credential findings + cross-correlation
+4. Offers: "Would you like me to run the full 7-domain assessment?"
+5. Invokes execution-summary
+
 ## Critical: Human-in-the-Loop Requirements
 
 1. **Before any remediation actions**: Display planned change, wait for approval

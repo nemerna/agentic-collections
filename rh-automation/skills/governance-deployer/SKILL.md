@@ -102,6 +102,39 @@ The deployment-risk-analyzer skill reads [deployment-governance.md](../../docs/a
 ### Reference Documentation
 - [deployment-governance.md](../../docs/aap/deployment-governance.md) - Risk classification, check mode, rollback
 
+## Example Usage
+
+### Example 1: Production Deployment with Full Governance
+
+**User**: "Deploy the security patch to production"
+
+**Agent**:
+
+1. Validates MCP connectivity via aap-mcp-validator
+2. Invokes deployment-risk-analyzer:
+   - Finds "Security Patch" template, identifies "Production" inventory → CRITICAL risk
+   - Check mode is overridable, but last run failed → adds WARN signal
+   - No failure notifications → flags governance gap
+3. Reports risk analysis to user with Red Hat citations
+4. Invokes governed-job-launcher:
+   - Runs check mode first → presents results: "Check mode: 12 changes, 2 shell tasks skipped"
+   - Asks: "Proceed with full execution?"
+   - User approves → executes phased rollout (Phase 1: 25% of hosts)
+   - Phase 1 succeeds → "Proceed to Phase 2?"
+5. Invokes execution-summary with full audit trail
+
+### Example 2: Low-Risk Development Deployment
+
+**User**: "Launch the dev-setup template"
+
+**Agent**:
+
+1. Validates MCP connectivity
+2. Invokes deployment-risk-analyzer: "Development" inventory → LOW risk, clear job history
+3. Reports: "Low risk deployment, direct execution permitted."
+4. Invokes governed-job-launcher: executes directly, reports results
+5. Invokes execution-summary
+
 ## Critical: Human-in-the-Loop Requirements
 
 1. **Before full execution** (CRITICAL/HIGH risk): Present check mode results, wait for approval
