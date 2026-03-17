@@ -1,5 +1,5 @@
 {
-  "name": "Red Hat Automation Agentic Skills Collection",
+  "name": "rh-automation",
   "version": "1.0.0",
   "description": "Ansible Automation Platform governance, deployment safety, and forensic troubleshooting tools for Red Hat automation engineers.",
   "author": {
