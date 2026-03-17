@@ -1,15 +1,6 @@
----
-title: TrustyAI Metrics Reference
-category: references
-tags: [trustyai, bias, drift, monitoring, metrics, prometheus]
-semantic_keywords: [TrustyAI CRD, bias metric names, drift metric names, prometheus queries, SPD threshold, DIR threshold]
-use_cases: [model-monitor]
-last_updated: 2026-03-17
----
-
 # TrustyAI Metrics Reference
 
-Non-inferable specifications for TrustyAI monitoring on OpenShift AI. The agent should use this as the authoritative source for CRD fields, Prometheus metric names, and domain-specific thresholds.
+Authoritative source for TrustyAIService CRD fields, Prometheus metric names, and domain-specific thresholds.
 
 ## TrustyAIService CRD
 

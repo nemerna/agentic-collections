@@ -1,15 +1,6 @@
----
-title: Guardrails Detectors Reference
-category: references
-tags: [guardrails, detectors, content-safety, trustyai, orchestrator]
-semantic_keywords: [GuardrailsOrchestrator CRD, detector models, granite guardian, guarded endpoint, detector types]
-use_cases: [guardrails-config]
-last_updated: 2026-03-16
----
-
 # Guardrails Detectors Reference
 
-Non-inferable specifications for TrustyAI Guardrails Orchestrator on OpenShift AI. The agent should use this as the authoritative source for CRD fields, detector model recommendations, and orchestrator configuration structure.
+Authoritative source for GuardrailsOrchestrator CRD fields, detector model recommendations, and orchestrator configuration structure.
 
 ## GuardrailsOrchestrator CRD
 
