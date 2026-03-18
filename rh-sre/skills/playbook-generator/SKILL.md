@@ -3,7 +3,12 @@ name: playbook-generator
 description: |
   **CRITICAL**: This skill ONLY GENERATES playbooks. It does NOT EXECUTE them. For execution, use /playbook-executor skill.
 
-  Generate production-ready Ansible remediation playbooks for CVE vulnerabilities with Red Hat best practices, error handling, and Kubernetes safety patterns. Use this skill when you need to create remediation playbooks that follow Red Hat Lightspeed patterns and incorporate RHEL-specific considerations.
+  Generate production-ready Ansible remediation playbooks for CVE vulnerabilities with Red Hat best practices, error handling, and Kubernetes safety patterns.
+
+  Use when:
+  - "Generate a remediation playbook for CVE-X"
+  - "Create playbook for these CVEs"
+  - "Get remediation playbook from Lightspeed"
 
   This skill calls the MCP tool (remediations__create_vuln_playbook) and returns the playbook **AS IS**. Do NOT modify, enhance, or add to the generated playbook. Any change requires explicit user validation first.
 
